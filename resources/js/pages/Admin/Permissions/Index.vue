@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Plus, Trash2, Edit } from 'lucide-vue-next';
+import { MoreHorizontal, Plus, Trash2, Edit, Eye } from 'lucide-vue-next';
 
 // Breadcrumbs untuk navigasi
 const breadcrumbs: BreadcrumbItem[] = [
@@ -84,10 +84,12 @@ const formatDate = (dateString) => {
     <div class="flex h-full flex-1 flex-col gap-4 p-4 md:p-6">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 class="text-2xl font-bold">Manajemen Izin</h1>
-        <Button class="flex items-center gap-1.5 w-full sm:w-auto">
-          <Plus class="h-4 w-4" />
-          Tambah Izin
-        </Button>
+        <Link :href="route('admin.permissions.create')" class="cursor-pointer">
+          <Button class="flex items-center gap-1.5 w-full sm:w-auto cursor-pointer">
+            <Plus class="h-4 w-4" />
+            Tambah Izin
+          </Button>
+        </Link>
       </div>
 
       <div class="bg-card text-card-foreground rounded-xl shadow border border-sidebar-border/70 dark:border-sidebar-border overflow-hidden">
@@ -118,16 +120,24 @@ const formatDate = (dateString) => {
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" class="cursor-pointer">
                         <MoreHorizontal class="h-4 w-4" />
                         <span class="sr-only">Menu</span>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem class="flex items-center gap-2 cursor-pointer">
-                        <Edit class="h-4 w-4" />
-                        <span>Edit</span>
-                      </DropdownMenuItem>
+                      <Link :href="route('admin.permissions.show', permission.id)" class="w-full">
+                        <DropdownMenuItem class="flex items-center gap-2 cursor-pointer">
+                          <Eye class="h-4 w-4" />
+                          <span>Lihat Detail</span>
+                        </DropdownMenuItem>
+                      </Link>
+                      <Link :href="route('admin.permissions.edit', permission.id)" class="w-full">
+                        <DropdownMenuItem class="flex items-center gap-2 cursor-pointer">
+                          <Edit class="h-4 w-4" />
+                          <span>Edit</span>
+                        </DropdownMenuItem>
+                      </Link>
                       <DropdownMenuItem class="flex items-center gap-2 cursor-pointer text-red-600" :disabled="permission.roles_count > 0">
                         <Trash2 class="h-4 w-4" />
                         <span>Hapus</span>

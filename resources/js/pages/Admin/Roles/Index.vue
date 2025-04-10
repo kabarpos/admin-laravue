@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Plus, Trash2, Edit, Key } from 'lucide-vue-next';
+import { MoreHorizontal, Plus, Trash2, Edit, Key, Eye } from 'lucide-vue-next';
 
 // Breadcrumbs untuk navigasi
 const breadcrumbs: BreadcrumbItem[] = [
@@ -63,10 +63,12 @@ const formatDate = (dateString) => {
     <div class="flex h-full flex-1 flex-col gap-4 p-4 md:p-6">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 class="text-2xl font-bold">Manajemen Peran</h1>
-        <Button class="flex items-center gap-1.5 w-full sm:w-auto">
-          <Plus class="h-4 w-4" />
-          Tambah Peran
-        </Button>
+        <Link :href="route('admin.roles.create')" class="cursor-pointer">
+          <Button class="flex items-center gap-1.5 w-full sm:w-auto cursor-pointer">
+            <Plus class="h-4 w-4" />
+            Tambah Peran
+          </Button>
+        </Link>
       </div>
 
       <div class="bg-card text-card-foreground rounded-xl shadow border border-sidebar-border/70 dark:border-sidebar-border overflow-hidden">
@@ -94,11 +96,13 @@ const formatDate = (dateString) => {
                     <Badge variant="outline">
                       {{ role.permissions.length }} izin
                     </Badge>
-                    <Badge v-if="role.permissions.length > 0" variant="outline" class="md:hidden">
-                      <button class="text-xs text-muted-foreground hover:text-foreground" title="Lihat semua izin">
-                        Lihat detail
-                      </button>
-                    </Badge>
+                    <Link v-if="role.permissions.length > 0" :href="route('admin.roles.show', role.id)" class="md:hidden">
+                      <Badge variant="outline">
+                        <span class="text-xs text-muted-foreground hover:text-foreground cursor-pointer" title="Lihat semua izin">
+                          Lihat detail
+                        </span>
+                      </Badge>
+                    </Link>
                     <div class="hidden md:flex md:gap-1 md:flex-wrap">
                       <Badge v-if="role.permissions.length > 3" variant="outline" class="bg-muted">
                         +{{ role.permissions.length }} izin
@@ -114,17 +118,25 @@ const formatDate = (dateString) => {
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" class="cursor-pointer">
                         <MoreHorizontal class="h-4 w-4" />
                         <span class="sr-only">Menu</span>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem class="flex items-center gap-2 cursor-pointer">
-                        <Edit class="h-4 w-4" />
-                        <span>Edit</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem class="flex items-center gap-2 cursor-pointer">
+                      <Link :href="route('admin.roles.show', role.id)" class="w-full">
+                        <DropdownMenuItem class="flex items-center gap-2 cursor-pointer">
+                          <Eye class="h-4 w-4" />
+                          <span>Lihat Detail</span>
+                        </DropdownMenuItem>
+                      </Link>
+                      <Link :href="route('admin.roles.edit', role.id)" class="w-full">
+                        <DropdownMenuItem class="flex items-center gap-2 cursor-pointer">
+                          <Edit class="h-4 w-4" />
+                          <span>Edit</span>
+                        </DropdownMenuItem>
+                      </Link>
+                      <DropdownMenuItem class="flex items-center gap-2 cursor-pointer" :disabled="role.name === 'admin'">
                         <Key class="h-4 w-4" />
                         <span>Kelola Izin</span>
                       </DropdownMenuItem>

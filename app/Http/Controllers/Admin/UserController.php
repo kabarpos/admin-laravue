@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
@@ -16,10 +17,22 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::with('roles')->paginate(10);
+        $usersData = User::with('roles')->paginate(10);
         
-        return Inertia::render('Admin/Users/Index', [
-            'users' => $users,
+        return Inertia::render('admin/Users/Index', [
+            'users' => [
+                'data' => $usersData->items(),
+                'links' => $usersData->linkCollection()->toArray(),
+                'meta' => [
+                    'current_page' => $usersData->currentPage(),
+                    'from' => $usersData->firstItem(),
+                    'last_page' => $usersData->lastPage(),
+                    'path' => $usersData->path(),
+                    'per_page' => $usersData->perPage(),
+                    'to' => $usersData->lastItem(),
+                    'total' => $usersData->total(),
+                ],
+            ],
         ]);
     }
 
@@ -30,7 +43,7 @@ class UserController extends Controller
     {
         $roles = Role::all();
         
-        return Inertia::render('Admin/Users/Create', [
+        return Inertia::render('admin/Users/Create', [
             'roles' => $roles,
         ]);
     }
@@ -70,7 +83,7 @@ class UserController extends Controller
     {
         $user->load('roles');
         
-        return Inertia::render('Admin/Users/Show', [
+        return Inertia::render('admin/Users/Show', [
             'user' => $user,
         ]);
     }
@@ -83,9 +96,20 @@ class UserController extends Controller
         $user->load('roles');
         $roles = Role::all();
         
-        return Inertia::render('Admin/Users/Edit', [
+        // Ambil array ID peran yang dimiliki oleh pengguna
+        $userRoles = $user->roles->pluck('id')->toArray();
+        
+        // Debug data
+        \Log::info('Editing user', [
+            'user_id' => $user->id,
+            'roles' => $roles->pluck('id', 'name')->toArray(),
+            'userRoles' => $userRoles
+        ]);
+        
+        return Inertia::render('admin/Users/Edit', [
             'user' => $user,
             'roles' => $roles,
+            'userRoles' => $userRoles,
         ]);
     }
 
@@ -94,34 +118,39 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
-        $validated = $request->validate([
+        // Aturan validasi dasar
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:users,email,'.$user->id,
             'status' => 'required|in:active,inactive,blocked,rejected',
-            'role_ids' => 'sometimes|array',
-        ]);
-
-        // Password baru opsional saat update
-        $data = [
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'status' => $validated['status'],
+            'role_ids' => 'nullable|array',
         ];
-
-        if ($request->filled('password')) {
-            $request->validate([
-                'password' => 'string|min:8|confirmed',
-            ]);
-            
+        
+        // Siapkan data untuk update 
+        $data = [
+            'name' => $request->name,
+            'email' => $request->email,
+            'status' => $request->status,
+        ];
+        
+        // Jika password diisi (tidak kosong), tambahkan validasi dan update password
+        if ($request->filled('password') && strlen(trim($request->password)) > 0) {
+            $rules['password'] = 'required|string|min:8|confirmed';
             $data['password'] = Hash::make($request->password);
         }
-
+        
+        // Validasi data
+        $validated = $request->validate($rules);
+        
+        // Update user (data sudah disiapkan di atas)
         $user->update($data);
-
-        if (isset($validated['role_ids'])) {
-            $user->syncRoles($validated['role_ids']);
+        
+        // Sync roles jika ada
+        if ($request->has('role_ids')) {
+            $roleIds = array_map('intval', $request->input('role_ids', []));
+            $user->syncRoles($roleIds);
         }
-
+        
         return redirect()->route('admin.users.index')
             ->with('message', 'Pengguna berhasil diperbarui.');
     }
@@ -142,12 +171,25 @@ class UserController extends Controller
      */
     public function updateStatus(Request $request, User $user)
     {
+        \Log::info('Permintaan update status diterima', [
+            'user_id' => $user->id,
+            'status_requested' => $request->status,
+            'current_status' => $user->status,
+            'request_data' => $request->all()
+        ]);
+        
         $validated = $request->validate([
             'status' => 'required|in:active,inactive,blocked,rejected',
         ]);
 
         $user->update([
             'status' => $validated['status']
+        ]);
+        
+        \Log::info('Status pengguna berhasil diperbarui', [
+            'user_id' => $user->id,
+            'old_status' => $user->getOriginal('status'),
+            'new_status' => $user->status
         ]);
 
         return redirect()->back()
