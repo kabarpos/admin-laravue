@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Validator;
@@ -58,7 +59,8 @@ class UserController extends Controller
             'email' => 'required|string|lowercase|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'status' => 'required|in:active,inactive,blocked,rejected',
-            'role_ids' => 'sometimes|array',
+            'role_ids' => 'required|array|min:1',
+            'role_ids.*' => 'exists:roles,id',
         ]);
 
         $user = User::create([
@@ -93,18 +95,16 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        $user->load('roles');
+        // Ambil model roles
         $roles = Role::all();
         
-        // Ambil array ID peran yang dimiliki oleh pengguna
-        $userRoles = $user->roles->pluck('id')->toArray();
-        
-        // Debug data
-        \Log::info('Editing user', [
-            'user_id' => $user->id,
-            'roles' => $roles->pluck('id', 'name')->toArray(),
-            'userRoles' => $userRoles
-        ]);
+        // Ambil array ID peran langsung dari database untuk memastikan data valid
+        $userRoles = DB::table('model_has_roles')
+                        ->where('model_id', $user->id)
+                        ->where('model_type', get_class($user))
+                        ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+                        ->pluck('roles.id')
+                        ->toArray();
         
         return Inertia::render('admin/Users/Edit', [
             'user' => $user,
@@ -123,7 +123,8 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:users,email,'.$user->id,
             'status' => 'required|in:active,inactive,blocked,rejected',
-            'role_ids' => 'nullable|array',
+            'role_ids' => 'required|array|min:1',
+            'role_ids.*' => 'exists:roles,id',
         ];
         
         // Siapkan data untuk update 

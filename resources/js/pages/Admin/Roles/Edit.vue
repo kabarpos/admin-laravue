@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft } from 'lucide-vue-next';
 
-// Breadcrumbs untuk navigasi
+// Breadcrumbs for navigation
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Admin',
@@ -78,7 +78,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Edit Peran" />
+    <Head title="Edit Role" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 p-4 md:p-6">
@@ -92,7 +92,7 @@ const submit = () => {
                         <ArrowLeft class="h-4 w-4" />
                     </Button>
                 </Link>
-                <h1 class="text-2xl font-bold">Edit Peran</h1>
+                <h1 class="text-2xl font-bold">Edit Role</h1>
             </div>
 
             <Alert v-if="role.name === 'admin'" class="mb-4 bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">

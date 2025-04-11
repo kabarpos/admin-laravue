@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { ArrowLeft } from 'lucide-vue-next';
-import { onMounted, nextTick } from 'vue';
+import { onMounted, nextTick, ref, watch } from 'vue';
 
 // Breadcrumbs untuk navigasi
 const breadcrumbs: BreadcrumbItem[] = [
@@ -45,23 +45,32 @@ const props = defineProps<{
     userRoles: number[];
 }>();
 
-// Form untuk edit pengguna
+// State untuk menyimpan error status role
+const roleError = ref('');
+
+// Buat form untuk mengedit data pengguna
 const form = useForm({
     name: props.user.name,
     email: props.user.email,
-    password: '', // Password kosong secara default, opsional saat update
+    password: '',
     password_confirmation: '',
     status: props.user.status,
-    role_ids: Array.isArray(props.userRoles) ? [...props.userRoles] : [],
-    _method: 'PUT',
+    role_ids: props.userRoles.map(id => Number(id)),
 });
 
-// Inisialisasi role IDs dari props untuk checkbox
-console.log('User roles dari props:', props.userRoles);
+// Watcher untuk memvalidasi setidaknya ada 1 role yang dipilih
+watch(() => form.role_ids, (newValue) => {
+    if (newValue.length === 0) {
+        roleError.value = 'Pengguna harus memiliki minimal 1 peran';
+    } else {
+        roleError.value = '';
+    }
+}, { immediate: true });
 
 // Cek apakah sebuah role dipilih
 const isRoleSelected = (roleId: number) => {
-    return form.role_ids.includes(Number(roleId));
+    roleId = Number(roleId);
+    return form.role_ids.includes(roleId);
 };
 
 // Toggle role selection
@@ -72,37 +81,46 @@ const toggleRole = (roleId: number) => {
     if (index === -1) {
         form.role_ids.push(roleId);
     } else {
-        form.role_ids.splice(index, 1);
+        // Jangan izinkan menghapus role jika hanya tersisa 1
+        if (form.role_ids.length > 1) {
+            form.role_ids.splice(index, 1);
+        } else {
+            // Jika mencoba menghapus role terakhir, tampilkan pesan error
+            roleError.value = 'Pengguna harus memiliki minimal 1 peran';
+        }
     }
-    console.log('Role IDs setelah toggle:', form.role_ids);
 };
 
 // Submit form
 const submit = () => {
-    // Tidak perlu manipulasi password di frontend
-    // Form akan mengirim password kosong jika tidak diisi
-    // Backend akan memeriksa dengan $request->filled('password')
-    form.post(route('admin.users.update', props.user.id), {
+    // Validasi minimal 1 role sebelum submit
+    if (form.role_ids.length === 0) {
+        roleError.value = 'Pengguna harus memiliki minimal 1 peran';
+        return;
+    }
+
+    // Pastikan semua role_ids adalah number sebelum dikirim
+    form.role_ids = form.role_ids.map(id => Number(id));
+
+    form.put(route('admin.users.update', props.user.id), {
         preserveScroll: true,
         onSuccess: () => {
-            console.log('User berhasil diperbarui');
             // Reset password fields after successful submission
             form.password = '';
             form.password_confirmation = '';
         },
         onError: (errors) => {
-            console.error('Error saat update user:', errors);
+            // Biarkan error ditangani oleh mekanisme default inertia
         }
     });
 };
 
-// Fungsi untuk memastikan password kosong
+// Fungsi untuk memastikan password kosong saat pertama kali komponen dimuat
+// untuk mengatasi autofill browser
 const forceEmptyPassword = () => {
-    // Secara paksa kosongkan password setelah autofill browser
-    setTimeout(() => {
-        form.password = '';
-        form.password_confirmation = '';
-    }, 100);
+    // Kosongkan password hanya saat pertama kali komponen dimuat
+    form.password = '';
+    form.password_confirmation = '';
 };
 
 // Status options
@@ -112,12 +130,13 @@ const statusOptions = [
     { value: 'blocked', label: 'Diblokir' },
 ];
 
-// Debug dalam lifecycle hook
+// Lifecycle hook
 onMounted(() => {
-    console.log('Component mounted');
-    console.log('User Data:', props.user);
-    console.log('User Roles dari props:', props.userRoles);
-    console.log('Form Role IDs awal:', form.role_ids);
+    // Force set data dalam onMounted untuk memastikan data terisi
+    if (Array.isArray(props.userRoles) && props.userRoles.length > 0) {
+        const roleIdsFromProps = props.userRoles.map(id => Number(id));
+        form.role_ids = [...roleIdsFromProps];
+    }
     
     // Kosongkan password yang mungkin diisi otomatis browser
     nextTick(() => {
@@ -144,7 +163,7 @@ onMounted(() => {
                 <h1 class="text-2xl font-bold">Edit Pengguna</h1>
             </div>
 
-            <form @submit.prevent="submit" @focusin="forceEmptyPassword">
+            <form @submit.prevent="submit">
                 <div class="grid gap-4 md:grid-cols-2">
                     <!-- Informasi Pengguna -->
                     <Card>
@@ -205,7 +224,6 @@ onMounted(() => {
                                             class="w-full"
                                             placeholder="Biarkan kosong jika tidak ingin mengubah"
                                             autocomplete="new-password"
-                                            @focus="forceEmptyPassword"
                                         />
                                         <p class="text-sm text-muted-foreground">
                                             Biarkan kosong jika tidak ingin mengubah kata sandi
@@ -224,7 +242,6 @@ onMounted(() => {
                                             class="w-full"
                                             placeholder="Konfirmasi kata sandi baru"
                                             autocomplete="new-password"
-                                            @focus="forceEmptyPassword"
                                         />
                                         <p class="text-sm text-muted-foreground">
                                             Konfirmasi kata sandi baru jika diubah
@@ -239,7 +256,7 @@ onMounted(() => {
                             <div class="space-y-2">
                                 <Label for="status">Status</Label>
                                 <Select v-model="form.status">
-                                    <SelectTrigger :class="{ 'border-red-500': form.errors.status }">
+                                    <SelectTrigger :class="{ 'border-red-500': form.errors.status, 'cursor-pointer': true }">
                                         <SelectValue placeholder="Pilih status pengguna" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -247,6 +264,7 @@ onMounted(() => {
                                             v-for="option in statusOptions" 
                                             :key="option.value" 
                                             :value="option.value"
+                                            class="cursor-pointer"
                                         >
                                             {{ option.label }}
                                         </SelectItem>
@@ -261,7 +279,9 @@ onMounted(() => {
                     <Card>
                         <CardHeader>
                             <CardTitle>Peran Pengguna</CardTitle>
-                            <CardDescription>Ubah peran yang dimiliki oleh pengguna</CardDescription>
+                            <CardDescription>
+                                Ubah peran yang dimiliki oleh pengguna (wajib minimal 1 peran)
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div class="space-y-4">
@@ -277,19 +297,34 @@ onMounted(() => {
                                         :key="role.id" 
                                         class="flex items-center space-x-2"
                                     >
-                                        <input 
-                                            type="checkbox" 
+                                        <Checkbox 
                                             :id="`role-${role.id}`" 
-                                            :value="role.id"
-                                            v-model="form.role_ids"
-                                            class="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
+                                            :value="Number(role.id)"
+                                            :model-value="isRoleSelected(role.id)"
+                                            @update:model-value="(checked) => {
+                                                if (checked) {
+                                                    if (!form.role_ids.includes(Number(role.id))) {
+                                                        form.role_ids.push(Number(role.id));
+                                                    }
+                                                } else {
+                                                    if (form.role_ids.length > 1) {
+                                                        const index = form.role_ids.indexOf(Number(role.id));
+                                                        if (index !== -1) form.role_ids.splice(index, 1);
+                                                    } else {
+                                                        roleError = 'Pengguna harus memiliki minimal 1 peran';
+                                                    }
+                                                }
+                                            }"
                                         />
-                                        <Label :for="`role-${role.id}`" class="capitalize">
+                                        <Label :for="`role-${role.id}`" class="capitalize cursor-pointer">
                                             {{ role.name }}
                                         </Label>
                                     </div>
                                 </div>
+                                
+                                <!-- Error untuk role_ids -->
                                 <p v-if="form.errors.role_ids" class="text-sm text-red-500">{{ form.errors.role_ids }}</p>
+                                <p v-if="roleError" class="text-sm text-red-500">{{ roleError }}</p>
                             </div>
                         </CardContent>
                     </Card>

@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ref } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { ArrowLeft } from 'lucide-vue-next';
 
 // Breadcrumbs untuk navigasi
@@ -36,6 +36,9 @@ const props = defineProps<{
     }>;
 }>();
 
+// State untuk menyimpan error status role
+const roleError = ref('');
+
 // Form untuk menambah pengguna
 const form = useForm({
     name: '',
@@ -46,23 +49,45 @@ const form = useForm({
     role_ids: [] as number[],
 });
 
+// Watcher untuk memvalidasi setidaknya ada 1 role yang dipilih
+watch(() => form.role_ids, (newValue) => {
+    if (newValue.length === 0) {
+        roleError.value = 'Pengguna harus memiliki minimal 1 peran';
+    } else {
+        roleError.value = '';
+    }
+}, { immediate: true });
+
 // State untuk mengelola role yang dipilih
 const isRoleSelected = (roleId: number) => {
-    return form.role_ids.includes(roleId);
+    return form.role_ids.includes(Number(roleId));
 };
 
 // Toggle role selection
 const toggleRole = (roleId: number) => {
+    roleId = Number(roleId);
     const index = form.role_ids.indexOf(roleId);
     if (index === -1) {
         form.role_ids.push(roleId);
     } else {
-        form.role_ids.splice(index, 1);
+        // Jangan izinkan menghapus role jika hanya tersisa 1
+        if (form.role_ids.length > 1) {
+            form.role_ids.splice(index, 1);
+        } else {
+            // Jika mencoba menghapus role terakhir, tampilkan pesan error
+            roleError.value = 'Pengguna harus memiliki minimal 1 peran';
+        }
     }
 };
 
 // Submit form
 const submit = () => {
+    // Validasi minimal 1 role sebelum submit
+    if (form.role_ids.length === 0) {
+        roleError.value = 'Pengguna harus memiliki minimal 1 peran';
+        return;
+    }
+
     form.post(route('admin.users.store'), {
         onSuccess: () => {
             // Form akan di-reset otomatis setelah berhasil
@@ -76,6 +101,15 @@ const statusOptions = [
     { value: 'inactive', label: 'Tidak Aktif' },
     { value: 'blocked', label: 'Diblokir' },
 ];
+
+// Pilih role 'user' sebagai default pada saat inisialisasi
+onMounted(() => {
+    // Cari role dengan nama 'user'
+    const userRole = props.roles.find(role => role.name.toLowerCase() === 'user');
+    if (userRole) {
+        form.role_ids.push(Number(userRole.id));
+    }
+});
 </script>
 
 <template>
@@ -153,7 +187,7 @@ const statusOptions = [
                             <div class="space-y-2">
                                 <Label for="status">Status</Label>
                                 <Select v-model="form.status">
-                                    <SelectTrigger :class="{ 'border-red-500': form.errors.status }">
+                                    <SelectTrigger :class="{ 'border-red-500': form.errors.status, 'cursor-pointer': true }">
                                         <SelectValue placeholder="Pilih status pengguna" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -161,6 +195,7 @@ const statusOptions = [
                                             v-for="option in statusOptions" 
                                             :key="option.value" 
                                             :value="option.value"
+                                            class="cursor-pointer"
                                         >
                                             {{ option.label }}
                                         </SelectItem>
@@ -175,7 +210,7 @@ const statusOptions = [
                     <Card>
                         <CardHeader>
                             <CardTitle>Peran Pengguna</CardTitle>
-                            <CardDescription>Pilih peran yang dimiliki oleh pengguna</CardDescription>
+                            <CardDescription>Pilih peran yang dimiliki oleh pengguna (wajib minimal 1 peran)</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div class="space-y-4">
@@ -196,10 +231,15 @@ const statusOptions = [
                                             :checked="isRoleSelected(role.id)"
                                             @update:checked="toggleRole(role.id)"
                                         />
-                                        <Label :for="`role-${role.id}`" class="capitalize">{{ role.name }}</Label>
+                                        <Label :for="`role-${role.id}`" class="capitalize cursor-pointer">
+                                            {{ role.name }}
+                                        </Label>
                                     </div>
                                 </div>
+                                
+                                <!-- Error untuk role_ids -->
                                 <p v-if="form.errors.role_ids" class="text-sm text-red-500">{{ form.errors.role_ids }}</p>
+                                <p v-if="roleError" class="text-sm text-red-500">{{ roleError }}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -217,6 +257,7 @@ const statusOptions = [
                     <Button 
                         type="submit" 
                         :disabled="form.processing"
+                        class="cursor-pointer"
                     >
                         Simpan
                     </Button>
