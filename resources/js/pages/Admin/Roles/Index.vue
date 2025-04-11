@@ -1,13 +1,24 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import ConfirmationDialog from '@/components/ui/ConfirmationDialog.vue';
 import { MoreHorizontal, Plus, Trash2, Edit, Key, Eye } from 'lucide-vue-next';
+import { toast } from 'vue-sonner';
+
+// Referensi peran yang sedang diproses
+const processingRole = ref(null);
+// State untuk menampilkan loading
+const loading = ref(false);
+
+// State untuk dialog konfirmasi
+const selectedRole = ref(null);
+const showDeleteDialog = ref(false);
 
 // Breadcrumbs untuk navigasi
 const breadcrumbs: BreadcrumbItem[] = [
@@ -53,6 +64,33 @@ const formatDate = (dateString: string) => {
     month: 'long',
     year: 'numeric'
   }).format(date);
+};
+
+// Fungsi untuk menampilkan dialog hapus
+const showHapusDialog = (role) => {
+  selectedRole.value = role;
+  showDeleteDialog.value = true;
+};
+
+// Fungsi untuk menghapus peran
+const hapusRole = () => {
+  if (!selectedRole.value) return;
+  
+  loading.value = true;
+  processingRole.value = selectedRole.value.id;
+  
+  // Simulasi penghapusan (akan diganti dengan panggilan API)
+  setTimeout(() => {
+    roles.value = roles.value.filter(role => role.id !== selectedRole.value.id);
+    
+    toast.success('Berhasil', {
+      description: `Peran ${selectedRole.value.name} berhasil dihapus`,
+    });
+    
+    showDeleteDialog.value = false;
+    loading.value = false;
+    processingRole.value = null;
+  }, 1000);
 };
 </script>
 
@@ -140,9 +178,13 @@ const formatDate = (dateString: string) => {
                         <Key class="h-4 w-4" />
                         <span>Kelola Izin</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem class="flex items-center gap-2 cursor-pointer py-1.5 text-red-600" :disabled="role.name === 'admin'">
+                      <DropdownMenuItem 
+                        class="flex items-center gap-2 cursor-pointer py-1.5 text-red-600" 
+                        :disabled="role.name === 'admin'"
+                        @click="showHapusDialog(role)"
+                      >
                         <Trash2 class="h-4 w-4" />
-                        <span>Hapus</span>
+                        <span>{{ loading && processingRole === role.id ? 'Memproses...' : 'Hapus' }}</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -153,5 +195,20 @@ const formatDate = (dateString: string) => {
         </div>
       </div>
     </div>
+
+    <!-- Dialog Konfirmasi Hapus -->
+    <ConfirmationDialog
+      :open="showDeleteDialog"
+      @update:open="showDeleteDialog = $event"
+      title="Konfirmasi Penghapusan"
+      dangerMode
+      :icon="Trash2"
+      :loading="loading"
+      confirmLabel="Hapus"
+      @confirm="hapusRole()"
+    >
+      <p class="mb-2">PERHATIAN: Tindakan ini tidak dapat dibatalkan!</p>
+      <p>Apakah Anda yakin ingin menghapus peran <span class="font-semibold capitalize">{{ selectedRole?.name }}</span>?</p>
+    </ConfirmationDialog>
   </AppLayout>
 </template> 

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import ConfirmationDialog from '@/components/ui/ConfirmationDialog.vue';
 import { MoreHorizontal, Plus, Check, X, Trash2, Edit, Shield, Eye } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
 
@@ -14,6 +15,12 @@ import { toast } from 'vue-sonner';
 const processingUser = ref(null);
 // State untuk menampilkan loading
 const loading = ref(false);
+
+// State untuk dialog konfirmasi
+const selectedUser = ref(null);
+const showActivationDialog = ref(false);
+const showBlockDialog = ref(false);
+const showDeleteDialog = ref(false);
 
 // Breadcrumbs untuk navigasi
 const breadcrumbs: BreadcrumbItem[] = [
@@ -86,94 +93,115 @@ const formatDate = (dateString: string) => {
   }).format(date);
 };
 
+// Fungsi untuk menampilkan dialog aktivasi
+const showAktivasiDialog = (user) => {
+  selectedUser.value = user;
+  showActivationDialog.value = true;
+};
+
 // Fungsi untuk mengaktifkan pengguna
-const aktivasiUser = (user) => {
-  if (confirm(`Apakah Anda yakin ingin mengaktifkan pengguna ${user.name}?`)) {
-    loading.value = true;
-    processingUser.value = user.id;
-    
-    console.log('Mengirim request aktivasi ke:', route('admin.users.update-status', user.id));
-    
-    // Format data sesuai dokumentasi Inertia.js
-    router.patch(route('admin.users.update-status', user.id), {
-      status: 'active'
-    }, {
-      preserveScroll: true,
-      onSuccess: () => {
-        toast.success('Berhasil', {
-          description: `Pengguna ${user.name} berhasil diaktifkan`,
-        });
-      },
-      onError: (errors) => {
-        toast.error('Gagal', {
-          description: `Terjadi kesalahan saat mengaktifkan pengguna: ${errors.message || 'Unknown error'}`,
-        });
-        console.error('Error saat aktivasi:', errors);
-      },
-      onFinish: () => {
-        loading.value = false;
-        processingUser.value = null;
-      }
-    });
-  }
+const aktivasiUser = () => {
+  if (!selectedUser.value) return;
+  
+  loading.value = true;
+  processingUser.value = selectedUser.value.id;
+  
+  console.log('Mengirim request aktivasi ke:', route('admin.users.update-status', selectedUser.value.id));
+  
+  // Format data sesuai dokumentasi Inertia.js
+  router.patch(route('admin.users.update-status', selectedUser.value.id), {
+    status: 'active'
+  }, {
+    preserveScroll: true,
+    onSuccess: () => {
+      toast.success('Berhasil', {
+        description: `Pengguna ${selectedUser.value.name} berhasil diaktifkan`,
+      });
+      showActivationDialog.value = false;
+    },
+    onError: (errors) => {
+      toast.error('Gagal', {
+        description: `Terjadi kesalahan saat mengaktifkan pengguna: ${errors.message || 'Unknown error'}`,
+      });
+      console.error('Error saat aktivasi:', errors);
+    },
+    onFinish: () => {
+      loading.value = false;
+      processingUser.value = null;
+    }
+  });
+};
+
+// Fungsi untuk menampilkan dialog blokir
+const showBlokirDialog = (user) => {
+  selectedUser.value = user;
+  showBlockDialog.value = true;
 };
 
 // Fungsi untuk memblokir pengguna
-const blokirUser = (user) => {
-  if (confirm(`Apakah Anda yakin ingin memblokir pengguna ${user.name}? Pengguna tidak akan bisa login.`)) {
-    loading.value = true;
-    processingUser.value = user.id;
-    
-    console.log('Mengirim request blokir ke:', route('admin.users.update-status', user.id));
-    
-    // Format data sesuai dokumentasi Inertia.js
-    router.patch(route('admin.users.update-status', user.id), {
-      status: 'blocked'
-    }, {
-      preserveScroll: true,
-      onSuccess: () => {
-        toast.success('Berhasil', {
-          description: `Pengguna ${user.name} berhasil diblokir`,
-        });
-      },
-      onError: (errors) => {
-        toast.error('Gagal', {
-          description: `Terjadi kesalahan saat memblokir pengguna: ${errors.message || 'Unknown error'}`,
-        });
-        console.error('Error saat blokir:', errors);
-      },
-      onFinish: () => {
-        loading.value = false;
-        processingUser.value = null;
-      }
-    });
-  }
+const blokirUser = () => {
+  if (!selectedUser.value) return;
+  
+  loading.value = true;
+  processingUser.value = selectedUser.value.id;
+  
+  console.log('Mengirim request blokir ke:', route('admin.users.update-status', selectedUser.value.id));
+  
+  // Format data sesuai dokumentasi Inertia.js
+  router.patch(route('admin.users.update-status', selectedUser.value.id), {
+    status: 'blocked'
+  }, {
+    preserveScroll: true,
+    onSuccess: () => {
+      toast.success('Berhasil', {
+        description: `Pengguna ${selectedUser.value.name} berhasil diblokir`,
+      });
+      showBlockDialog.value = false;
+    },
+    onError: (errors) => {
+      toast.error('Gagal', {
+        description: `Terjadi kesalahan saat memblokir pengguna: ${errors.message || 'Unknown error'}`,
+      });
+      console.error('Error saat blokir:', errors);
+    },
+    onFinish: () => {
+      loading.value = false;
+      processingUser.value = null;
+    }
+  });
+};
+
+// Fungsi untuk menampilkan dialog hapus
+const showHapusDialog = (user) => {
+  selectedUser.value = user;
+  showDeleteDialog.value = true;
 };
 
 // Fungsi untuk menghapus pengguna
-const hapusUser = (user) => {
-  if (confirm(`PERHATIAN: Tindakan ini tidak dapat dibatalkan!\nApakah Anda yakin ingin menghapus pengguna ${user.name}?`)) {
-    loading.value = true;
-    processingUser.value = user.id;
-    
-    router.delete(route('admin.users.destroy', user.id), {
-      onSuccess: () => {
-        toast.success('Berhasil', {
-          description: `Pengguna ${user.name} berhasil dihapus`,
-        });
-      },
-      onError: (errors) => {
-        toast.error('Gagal', {
-          description: `Terjadi kesalahan saat menghapus pengguna: ${errors.message || 'Unknown error'}`,
-        });
-        console.error('Error:', errors);
-      },
-      onFinish: () => {
-        loading.value = false;
-        processingUser.value = null;
-      }
-    });
-  }
+const hapusUser = () => {
+  if (!selectedUser.value) return;
+  
+  loading.value = true;
+  processingUser.value = selectedUser.value.id;
+  
+  router.delete(route('admin.users.destroy', selectedUser.value.id), {
+    onSuccess: () => {
+      toast.success('Berhasil', {
+        description: `Pengguna ${selectedUser.value.name} berhasil dihapus`,
+      });
+      showDeleteDialog.value = false;
+    },
+    onError: (errors) => {
+      toast.error('Gagal', {
+        description: `Terjadi kesalahan saat menghapus pengguna: ${errors.message || 'Unknown error'}`,
+      });
+      console.error('Error:', errors);
+    },
+    onFinish: () => {
+      loading.value = false;
+      processingUser.value = null;
+    }
+  });
 };
 </script>
 
@@ -252,7 +280,7 @@ const hapusUser = (user) => {
                       </Link>
                       <DropdownMenuItem 
                         v-if="user.status !== 'active'" 
-                        @click="aktivasiUser(user)"
+                        @click="showAktivasiDialog(user)"
                         class="flex items-center gap-2 cursor-pointer py-1.5"
                         :disabled="loading && processingUser === user.id"
                       >
@@ -261,7 +289,7 @@ const hapusUser = (user) => {
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         v-if="user.status !== 'blocked'" 
-                        @click="blokirUser(user)"
+                        @click="showBlokirDialog(user)"
                         class="flex items-center gap-2 cursor-pointer py-1.5 text-red-600"
                         :disabled="loading && processingUser === user.id"
                       >
@@ -269,7 +297,7 @@ const hapusUser = (user) => {
                         <span>{{ loading && processingUser === user.id ? 'Memproses...' : 'Blokir' }}</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        @click="hapusUser(user)"
+                        @click="showHapusDialog(user)"
                         class="flex items-center gap-2 cursor-pointer py-1.5 text-red-600"
                         :disabled="loading && processingUser === user.id"
                       >
@@ -310,5 +338,46 @@ const hapusUser = (user) => {
         </div>
       </div>
     </div>
+
+    <!-- Dialog Konfirmasi Aktivasi -->
+    <ConfirmationDialog
+      :open="showActivationDialog"
+      @update:open="showActivationDialog = $event"
+      title="Konfirmasi Aktivasi"
+      :description="`Apakah Anda yakin ingin mengaktifkan pengguna ${selectedUser?.name}?`"
+      confirmLabel="Aktifkan"
+      :loading="loading"
+      :icon="Check"
+      @confirm="aktivasiUser()"
+    />
+
+    <!-- Dialog Konfirmasi Blokir -->
+    <ConfirmationDialog
+      :open="showBlockDialog"
+      @update:open="showBlockDialog = $event"
+      title="Konfirmasi Pemblokiran"
+      dangerMode
+      :icon="X"
+      :loading="loading"
+      confirmLabel="Blokir"
+      @confirm="blokirUser()"
+    >
+      Apakah Anda yakin ingin memblokir pengguna <span class="font-semibold">{{ selectedUser?.name }}</span>? Pengguna tidak akan bisa login.
+    </ConfirmationDialog>
+
+    <!-- Dialog Konfirmasi Hapus -->
+    <ConfirmationDialog
+      :open="showDeleteDialog"
+      @update:open="showDeleteDialog = $event"
+      title="Konfirmasi Penghapusan"
+      dangerMode
+      :icon="Trash2"
+      :loading="loading"
+      confirmLabel="Hapus"
+      @confirm="hapusUser()"
+    >
+      <p class="mb-2">PERHATIAN: Tindakan ini tidak dapat dibatalkan!</p>
+      <p>Apakah Anda yakin ingin menghapus pengguna <span class="font-semibold">{{ selectedUser?.name }}</span>?</p>
+    </ConfirmationDialog>
   </AppLayout>
 </template> 
