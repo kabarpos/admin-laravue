@@ -67,7 +67,7 @@ const permissions = ref([
   }
 ]);
 
-const formatDate = (dateString) => {
+const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return new Intl.DateTimeFormat('id-ID', {
     day: 'numeric',
@@ -99,46 +99,46 @@ const formatDate = (dateString) => {
         </div>
         
         <div class="border-t overflow-x-auto">
-          <Table>
+          <Table class="w-full">
             <TableHeader>
-              <TableRow>
-                <TableHead>Nama</TableHead>
-                <TableHead>Digunakan Oleh</TableHead>
-                <TableHead class="hidden md:table-cell">Tanggal Dibuat</TableHead>
-                <TableHead class="w-[80px]"></TableHead>
+              <TableRow class="hover:bg-transparent border-b border-border">
+                <TableHead class="py-3 px-6 font-medium text-muted-foreground">Nama</TableHead>
+                <TableHead class="py-3 px-6 font-medium text-muted-foreground">Digunakan Oleh</TableHead>
+                <TableHead class="py-3 px-6 font-medium text-muted-foreground hidden md:table-cell">Tanggal Dibuat</TableHead>
+                <TableHead class="py-3 px-6 font-medium text-muted-foreground w-[60px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow v-for="permission in permissions" :key="permission.id">
-                <TableCell class="font-medium">{{ permission.name }}</TableCell>
-                <TableCell>
-                  <Badge>
+              <TableRow v-for="permission in permissions" :key="permission.id" class="border-b border-border/60 hover:bg-muted/20">
+                <TableCell class="py-3.5 px-6 align-middle font-medium">{{ permission.name }}</TableCell>
+                <TableCell class="py-3.5 px-6 align-middle">
+                  <Badge class="text-xs px-2.5 py-0.5">
                     {{ permission.roles_count }} peran
                   </Badge>
                 </TableCell>
-                <TableCell class="hidden md:table-cell">{{ formatDate(permission.created_at) }}</TableCell>
-                <TableCell>
+                <TableCell class="py-3.5 px-6 align-middle hidden md:table-cell text-sm text-muted-foreground">{{ formatDate(permission.created_at) }}</TableCell>
+                <TableCell class="py-3.5 px-6 align-middle text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" class="cursor-pointer">
+                      <Button variant="ghost" size="icon" class="h-8 w-8 cursor-pointer">
                         <MoreHorizontal class="h-4 w-4" />
                         <span class="sr-only">Menu</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" class="w-[160px]">
                       <Link :href="route('admin.permissions.show', permission.id)" class="w-full">
-                        <DropdownMenuItem class="flex items-center gap-2 cursor-pointer">
+                        <DropdownMenuItem class="flex items-center gap-2 cursor-pointer py-1.5">
                           <Eye class="h-4 w-4" />
                           <span>Lihat Detail</span>
                         </DropdownMenuItem>
                       </Link>
                       <Link :href="route('admin.permissions.edit', permission.id)" class="w-full">
-                        <DropdownMenuItem class="flex items-center gap-2 cursor-pointer">
+                        <DropdownMenuItem class="flex items-center gap-2 cursor-pointer py-1.5">
                           <Edit class="h-4 w-4" />
                           <span>Edit</span>
                         </DropdownMenuItem>
                       </Link>
-                      <DropdownMenuItem class="flex items-center gap-2 cursor-pointer text-red-600" :disabled="permission.roles_count > 0">
+                      <DropdownMenuItem class="flex items-center gap-2 cursor-pointer py-1.5 text-red-600" :disabled="permission.roles_count > 0">
                         <Trash2 class="h-4 w-4" />
                         <span>Hapus</span>
                       </DropdownMenuItem>

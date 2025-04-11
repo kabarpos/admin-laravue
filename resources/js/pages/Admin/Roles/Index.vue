@@ -46,7 +46,7 @@ const roles = ref([
   }
 ]);
 
-const formatDate = (dateString) => {
+const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return new Intl.DateTimeFormat('id-ID', {
     day: 'numeric',
@@ -78,69 +78,69 @@ const formatDate = (dateString) => {
         </div>
         
         <div class="border-t overflow-x-auto">
-          <Table>
+          <Table class="w-full">
             <TableHeader>
-              <TableRow>
-                <TableHead>Nama</TableHead>
-                <TableHead>Izin</TableHead>
-                <TableHead class="hidden md:table-cell">Jumlah Pengguna</TableHead>
-                <TableHead class="hidden md:table-cell">Tanggal Dibuat</TableHead>
-                <TableHead class="w-[80px]"></TableHead>
+              <TableRow class="hover:bg-transparent border-b border-border">
+                <TableHead class="py-3 px-6 font-medium text-muted-foreground">Nama</TableHead>
+                <TableHead class="py-3 px-6 font-medium text-muted-foreground">Izin</TableHead>
+                <TableHead class="py-3 px-6 font-medium text-muted-foreground hidden md:table-cell">Jumlah Pengguna</TableHead>
+                <TableHead class="py-3 px-6 font-medium text-muted-foreground hidden md:table-cell">Tanggal Dibuat</TableHead>
+                <TableHead class="py-3 px-6 font-medium text-muted-foreground w-[60px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow v-for="role in roles" :key="role.id">
-                <TableCell class="font-medium capitalize">{{ role.name }}</TableCell>
-                <TableCell>
-                  <div class="flex gap-1 flex-wrap">
-                    <Badge variant="outline">
+              <TableRow v-for="role in roles" :key="role.id" class="border-b border-border/60 hover:bg-muted/20">
+                <TableCell class="py-3.5 px-6 align-middle font-medium capitalize">{{ role.name }}</TableCell>
+                <TableCell class="py-3.5 px-6 align-middle">
+                  <div class="flex gap-1.5 flex-wrap">
+                    <Badge variant="outline" class="text-xs px-2 py-0.5">
                       {{ role.permissions.length }} izin
                     </Badge>
                     <Link v-if="role.permissions.length > 0" :href="route('admin.roles.show', role.id)" class="md:hidden">
-                      <Badge variant="outline">
+                      <Badge variant="outline" class="text-xs px-2 py-0.5">
                         <span class="text-xs text-muted-foreground hover:text-foreground cursor-pointer" title="Lihat semua izin">
                           Lihat detail
                         </span>
                       </Badge>
                     </Link>
-                    <div class="hidden md:flex md:gap-1 md:flex-wrap">
-                      <Badge v-if="role.permissions.length > 3" variant="outline" class="bg-muted">
+                    <div class="hidden md:flex md:gap-1.5 md:flex-wrap">
+                      <Badge v-if="role.permissions.length > 3" variant="outline" class="text-xs px-2 py-0.5 bg-muted">
                         +{{ role.permissions.length }} izin
                       </Badge>
-                      <Badge v-else v-for="permission in role.permissions.slice(0, 3)" :key="permission" variant="outline" class="text-xs">
+                      <Badge v-else v-for="permission in role.permissions.slice(0, 3)" :key="permission" variant="outline" class="text-xs px-2 py-0.5">
                         {{ permission }}
                       </Badge>
                     </div>
                   </div>
                 </TableCell>
-                <TableCell class="hidden md:table-cell">{{ role.users_count }}</TableCell>
-                <TableCell class="hidden md:table-cell">{{ formatDate(role.created_at) }}</TableCell>
-                <TableCell>
+                <TableCell class="py-3.5 px-6 align-middle hidden md:table-cell text-center text-sm text-muted-foreground">{{ role.users_count }}</TableCell>
+                <TableCell class="py-3.5 px-6 align-middle hidden md:table-cell text-sm text-muted-foreground">{{ formatDate(role.created_at) }}</TableCell>
+                <TableCell class="py-3.5 px-6 align-middle text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" class="cursor-pointer">
+                      <Button variant="ghost" size="icon" class="h-8 w-8 cursor-pointer">
                         <MoreHorizontal class="h-4 w-4" />
                         <span class="sr-only">Menu</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" class="w-[160px]">
                       <Link :href="route('admin.roles.show', role.id)" class="w-full">
-                        <DropdownMenuItem class="flex items-center gap-2 cursor-pointer">
+                        <DropdownMenuItem class="flex items-center gap-2 cursor-pointer py-1.5">
                           <Eye class="h-4 w-4" />
                           <span>Lihat Detail</span>
                         </DropdownMenuItem>
                       </Link>
                       <Link :href="route('admin.roles.edit', role.id)" class="w-full">
-                        <DropdownMenuItem class="flex items-center gap-2 cursor-pointer">
+                        <DropdownMenuItem class="flex items-center gap-2 cursor-pointer py-1.5">
                           <Edit class="h-4 w-4" />
                           <span>Edit</span>
                         </DropdownMenuItem>
                       </Link>
-                      <DropdownMenuItem class="flex items-center gap-2 cursor-pointer" :disabled="role.name === 'admin'">
+                      <DropdownMenuItem class="flex items-center gap-2 cursor-pointer py-1.5" :disabled="role.name === 'admin'">
                         <Key class="h-4 w-4" />
                         <span>Kelola Izin</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem class="flex items-center gap-2 cursor-pointer text-red-600" :disabled="role.name === 'admin'">
+                      <DropdownMenuItem class="flex items-center gap-2 cursor-pointer py-1.5 text-red-600" :disabled="role.name === 'admin'">
                         <Trash2 class="h-4 w-4" />
                         <span>Hapus</span>
                       </DropdownMenuItem>

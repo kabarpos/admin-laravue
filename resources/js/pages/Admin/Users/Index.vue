@@ -67,7 +67,7 @@ const props = defineProps<{
     };
 }>();
 
-const getStatusColor = (status) => {
+const getStatusColor = (status: string) => {
   switch(status) {
     case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
     case 'inactive': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
@@ -77,7 +77,7 @@ const getStatusColor = (status) => {
   }
 };
 
-const formatDate = (dateString) => {
+const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return new Intl.DateTimeFormat('id-ID', {
     day: 'numeric',
@@ -199,53 +199,53 @@ const hapusUser = (user) => {
         </div>
         
         <div class="border-t overflow-x-auto">
-          <Table>
+          <Table class="w-full">
             <TableHeader>
-              <TableRow>
-                <TableHead>Nama</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead class="hidden md:table-cell">Peran</TableHead>
-                <TableHead class="hidden md:table-cell">Tanggal Daftar</TableHead>
-                <TableHead class="w-[80px]"></TableHead>
+              <TableRow class="hover:bg-transparent border-b border-border">
+                <TableHead class="py-3 px-6 font-medium text-muted-foreground">Nama</TableHead>
+                <TableHead class="py-3 px-6 font-medium text-muted-foreground">Email</TableHead>
+                <TableHead class="py-3 px-6 font-medium text-muted-foreground">Status</TableHead>
+                <TableHead class="py-3 px-6 font-medium text-muted-foreground hidden md:table-cell">Peran</TableHead>
+                <TableHead class="py-3 px-6 font-medium text-muted-foreground hidden md:table-cell">Tanggal Daftar</TableHead>
+                <TableHead class="py-3 px-6 font-medium text-muted-foreground w-[60px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow v-for="user in props.users.data" :key="user.id">
-                <TableCell class="font-medium">{{ user.name }}</TableCell>
-                <TableCell class="break-all">{{ user.email }}</TableCell>
-                <TableCell>
-                  <Badge :class="getStatusColor(user.status)">
+              <TableRow v-for="user in props.users.data" :key="user.id" class="border-b border-border/60 hover:bg-muted/20">
+                <TableCell class="py-3.5 px-6 align-middle font-medium">{{ user.name }}</TableCell>
+                <TableCell class="py-3.5 px-6 align-middle text-sm">{{ user.email }}</TableCell>
+                <TableCell class="py-3.5 px-6 align-middle">
+                  <Badge :class="getStatusColor(user.status)" class="px-2.5 py-0.5 text-xs font-medium">
                     {{ user.status === 'active' ? 'Aktif' : 
                        user.status === 'inactive' ? 'Tidak Aktif' : 
                        user.status === 'blocked' ? 'Diblokir' : 'Ditolak' }}
                   </Badge>
                 </TableCell>
-                <TableCell class="hidden md:table-cell">
-                  <div class="flex gap-1 flex-wrap">
-                    <Badge v-for="role in user.roles" :key="role.id" variant="outline" class="capitalize">
+                <TableCell class="py-3.5 px-6 align-middle hidden md:table-cell">
+                  <div class="flex gap-1.5 flex-wrap">
+                    <Badge v-for="role in user.roles" :key="role.id" variant="outline" class="capitalize text-xs px-2 py-0.5">
                       {{ role.name }}
                     </Badge>
                   </div>
                 </TableCell>
-                <TableCell class="hidden md:table-cell">{{ formatDate(user.created_at) }}</TableCell>
-                <TableCell>
+                <TableCell class="py-3.5 px-6 align-middle hidden md:table-cell text-sm text-muted-foreground">{{ formatDate(user.created_at) }}</TableCell>
+                <TableCell class="py-3.5 px-6 align-middle text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" class="cursor-pointer">
+                      <Button variant="ghost" size="icon" class="h-8 w-8 cursor-pointer">
                         <MoreHorizontal class="h-4 w-4" />
                         <span class="sr-only">Menu</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" class="w-[160px]">
                       <Link :href="route('admin.users.show', user.id)" class="w-full">
-                        <DropdownMenuItem class="flex items-center gap-2 cursor-pointer">
+                        <DropdownMenuItem class="flex items-center gap-2 cursor-pointer py-1.5">
                           <Eye class="h-4 w-4" />
                           <span>Lihat Detail</span>
                         </DropdownMenuItem>
                       </Link>
                       <Link :href="route('admin.users.edit', user.id)" class="w-full">
-                        <DropdownMenuItem class="flex items-center gap-2 cursor-pointer">
+                        <DropdownMenuItem class="flex items-center gap-2 cursor-pointer py-1.5">
                           <Edit class="h-4 w-4" />
                           <span>Edit</span>
                         </DropdownMenuItem>
@@ -253,7 +253,7 @@ const hapusUser = (user) => {
                       <DropdownMenuItem 
                         v-if="user.status !== 'active'" 
                         @click="aktivasiUser(user)"
-                        class="flex items-center gap-2 cursor-pointer"
+                        class="flex items-center gap-2 cursor-pointer py-1.5"
                         :disabled="loading && processingUser === user.id"
                       >
                         <Check class="h-4 w-4" />
@@ -262,7 +262,7 @@ const hapusUser = (user) => {
                       <DropdownMenuItem 
                         v-if="user.status !== 'blocked'" 
                         @click="blokirUser(user)"
-                        class="flex items-center gap-2 cursor-pointer text-red-600"
+                        class="flex items-center gap-2 cursor-pointer py-1.5 text-red-600"
                         :disabled="loading && processingUser === user.id"
                       >
                         <X class="h-4 w-4" />
@@ -270,7 +270,7 @@ const hapusUser = (user) => {
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         @click="hapusUser(user)"
-                        class="flex items-center gap-2 cursor-pointer text-red-600"
+                        class="flex items-center gap-2 cursor-pointer py-1.5 text-red-600"
                         :disabled="loading && processingUser === user.id"
                       >
                         <Trash2 class="h-4 w-4" />

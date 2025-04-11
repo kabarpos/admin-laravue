@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, Link } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -46,14 +46,16 @@ const submit = () => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 p-4 md:p-6">
             <div class="flex items-center gap-4">
-                <Button 
-                    variant="outline" 
-                    size="icon" 
-                    class="h-7 w-7 cursor-pointer"
-                    :href="route('admin.permissions.index')"
-                >
-                    <ArrowLeft class="h-4 w-4" />
-                </Button>
+                <Link :href="route('admin.permissions.index')">
+                    <Button 
+                        variant="outline" 
+                        size="icon" 
+                        class="h-7 w-7 cursor-pointer"
+                        type="button"
+                    >
+                        <ArrowLeft class="h-4 w-4" />
+                    </Button>
+                </Link>
                 <h1 class="text-2xl font-bold">Tambah Izin</h1>
             </div>
 
@@ -88,14 +90,15 @@ const submit = () => {
                     </Card>
 
                     <div class="mt-6 flex items-center justify-end gap-4">
-                        <Button 
-                            type="button" 
-                            variant="outline"
-                            class="cursor-pointer"
-                            :href="route('admin.permissions.index')"
-                        >
-                            Batal
-                        </Button>
+                        <Link :href="route('admin.permissions.index')">
+                            <Button 
+                                type="button" 
+                                variant="outline"
+                                class="cursor-pointer"
+                            >
+                                Batal
+                            </Button>
+                        </Link>
                         <Button 
                             type="submit" 
                             :disabled="form.processing"

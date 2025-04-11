@@ -17,7 +17,7 @@ class RoleController extends Controller
     {
         $roles = Role::with('permissions')->paginate(10);
         
-        return Inertia::render('admin/Roles/Index', [
+        return Inertia::render('Admin/Roles/Index', [
             'roles' => $roles,
         ]);
     }
@@ -29,7 +29,7 @@ class RoleController extends Controller
     {
         $permissions = Permission::all();
         
-        return Inertia::render('admin/Roles/Create', [
+        return Inertia::render('Admin/Roles/Create', [
             'permissions' => $permissions,
         ]);
     }
@@ -61,7 +61,7 @@ class RoleController extends Controller
     {
         $role->load('permissions');
         
-        return Inertia::render('admin/Roles/Show', [
+        return Inertia::render('Admin/Roles/Show', [
             'role' => $role,
         ]);
     }
@@ -74,7 +74,7 @@ class RoleController extends Controller
         $role->load('permissions');
         $permissions = Permission::all();
         
-        return Inertia::render('admin/Roles/Edit', [
+        return Inertia::render('Admin/Roles/Edit', [
             'role' => $role,
             'permissions' => $permissions,
         ]);

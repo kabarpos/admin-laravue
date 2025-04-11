@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     // Dashboard Admin
     Route::get('/', function () {
-        return inertia('admin/Dashboard/Index');
+        return inertia('Admin/Dashboard/Index');
     })->name('dashboard');
 
     // Manajemen User
