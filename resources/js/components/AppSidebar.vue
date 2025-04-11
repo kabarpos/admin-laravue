@@ -53,11 +53,9 @@ const footerNavItems: NavItem[] = [];
         </SidebarHeader>
 
         <SidebarContent>
-            <h2 class="text-xs uppercase font-medium text-muted-foreground tracking-wider px-3 mb-2 ml-2">Utama</h2>
             <NavMain :items="mainNavItems" />
             
             <!-- Menu administrasi -->
-            <h2 class="text-xs uppercase font-medium text-muted-foreground tracking-wider px-3 mb-2 mt-6 ml-2">Administrasi</h2>
             <NavMain :items="adminNavItems" />
         </SidebarContent>
 
