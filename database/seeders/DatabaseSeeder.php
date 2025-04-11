@@ -18,5 +18,8 @@ class DatabaseSeeder extends Seeder
         
         // Seed user admin
         $this->call(AdminUserSeeder::class);
+        
+        // Seed pengaturan email
+        $this->call(EmailSettingsSeeder::class);
     }
 }

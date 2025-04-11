@@ -5,7 +5,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { LayoutGrid, UsersIcon, ShieldIcon, KeyIcon } from 'lucide-vue-next';
+import { LayoutGrid, UsersIcon, ShieldIcon, KeyIcon, Settings, Mail } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
@@ -32,6 +32,11 @@ const adminNavItems: NavItem[] = [
         title: 'Manajemen Izin',
         href: route('admin.permissions.index'),
         icon: KeyIcon,
+    },
+    {
+        title: 'Pengaturan Email',
+        href: route('admin.email-settings.edit'),
+        icon: Mail,
     }
 ];
 
