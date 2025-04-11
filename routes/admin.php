@@ -15,6 +15,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Manajemen User
     Route::resource('users', UserController::class);
     Route::patch('users/{user}/status', [UserController::class, 'updateStatus'])->name('users.update-status');
+    Route::post('users/{user}/resend-verification', [UserController::class, 'resendVerification'])->name('users.resend-verification');
+    Route::post('users/{user}/mark-verified', [UserController::class, 'markVerified'])->name('users.mark-verified');
     
     // Manajemen Role
     Route::resource('roles', RoleController::class);

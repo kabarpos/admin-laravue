@@ -196,4 +196,70 @@ class UserController extends Controller
         return redirect()->back()
             ->with('message', 'Status pengguna berhasil diperbarui.');
     }
+    
+    /**
+     * Kirim ulang email verifikasi untuk pengguna
+     */
+    public function resendVerification(User $user)
+    {
+        try {
+            // Periksa pengaturan untuk melihat apakah verifikasi diaktifkan
+            $settings = \App\Models\EmailSetting::getSettings();
+            if (!$settings->enable_verification) {
+                // Jika fitur verifikasi dinonaktifkan, verifikasi pengguna secara otomatis
+                $user->markEmailAsVerified();
+                return response()->json(['message' => 'Email otomatis ditandai sebagai terverifikasi karena fitur verifikasi dinonaktifkan']);
+            }
+
+            // Buat URL verifikasi
+            $verificationUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+                'verification.verify',
+                now()->addMinutes(60),
+                ['id' => $user->getKey(), 'hash' => sha1($user->getEmailForVerification())]
+            );
+
+            // Kirim email verifikasi kustom
+            \Illuminate\Support\Facades\Mail::to($user->email)
+                ->send(new \App\Mail\CustomVerifyEmail($user, $verificationUrl));
+
+            return response()->json(['message' => 'Email verifikasi berhasil dikirim']);
+        } catch (\Exception $e) {
+            \Log::error('Gagal mengirim email verifikasi', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json(['message' => 'Gagal mengirim email verifikasi: ' . $e->getMessage()], 500);
+        }
+    }
+    
+    /**
+     * Tandai email pengguna sebagai terverifikasi
+     */
+    public function markVerified(User $user)
+    {
+        try {
+            // Tandai email sebagai terverifikasi
+            $user->markEmailAsVerified();
+            
+            // Pastikan status pengguna aktif jika masih inactive
+            if ($user->status === 'inactive') {
+                $user->update(['status' => 'active']);
+            }
+            
+            \Log::info('Email pengguna ditandai sebagai terverifikasi', [
+                'user_id' => $user->id,
+                'admin_id' => auth()->id()
+            ]);
+            
+            return response()->json(['message' => 'Email pengguna berhasil ditandai sebagai terverifikasi']);
+        } catch (\Exception $e) {
+            \Log::error('Gagal menandai email sebagai terverifikasi', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json(['message' => 'Gagal menandai email sebagai terverifikasi: ' . $e->getMessage()], 500);
+        }
+    }
 }

@@ -10,8 +10,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft } from 'lucide-vue-next';
+import { ArrowLeft, Mail, CheckCircle } from 'lucide-vue-next';
 import { onMounted, nextTick, ref, watch } from 'vue';
+import axios from 'axios';
+import { toast } from 'vue-sonner';
 
 // Breadcrumbs untuk navigasi
 const breadcrumbs: BreadcrumbItem[] = [
@@ -47,6 +49,9 @@ const props = defineProps<{
 
 // State untuk menyimpan error status role
 const roleError = ref('');
+const isEmailVerified = ref(!!props.user.email_verified_at);
+const isResendingVerification = ref(false);
+const isMarkingVerified = ref(false);
 
 // Buat form untuk mengedit data pengguna
 const form = useForm({
@@ -57,6 +62,45 @@ const form = useForm({
     status: props.user.status,
     role_ids: props.userRoles.map(id => Number(id)),
 });
+
+// Mengirim ulang email verifikasi
+const resendVerificationEmail = () => {
+    isResendingVerification.value = true;
+    axios.post(route('admin.users.resend-verification', props.user.id))
+        .then(() => {
+            toast.success('Berhasil', {
+                description: 'Email verifikasi berhasil dikirim ulang',
+            });
+        })
+        .catch((error) => {
+            toast.error('Gagal', {
+                description: `Terjadi kesalahan: ${error.response?.data?.message || error.message}`,
+            });
+        })
+        .finally(() => {
+            isResendingVerification.value = false;
+        });
+};
+
+// Menandai email sebagai terverifikasi secara manual
+const markEmailAsVerified = () => {
+    isMarkingVerified.value = true;
+    axios.post(route('admin.users.mark-verified', props.user.id))
+        .then(() => {
+            toast.success('Berhasil', {
+                description: 'Email pengguna telah ditandai sebagai terverifikasi',
+            });
+            isEmailVerified.value = true;
+        })
+        .catch((error) => {
+            toast.error('Gagal', {
+                description: `Terjadi kesalahan: ${error.response?.data?.message || error.message}`,
+            });
+        })
+        .finally(() => {
+            isMarkingVerified.value = false;
+        });
+};
 
 // Watcher untuk memvalidasi setidaknya ada 1 role yang dipilih
 watch(() => form.role_ids, (newValue) => {
@@ -196,15 +240,43 @@ onMounted(() => {
                                 <p v-if="form.errors.email" class="text-sm text-red-500">{{ form.errors.email }}</p>
                             </div>
 
-                            <div class="flex items-center gap-2">
-                                <Switch
-                                    :id="'verification'"
-                                    :disabled="!!props.user.email_verified_at"
-                                    :checked="!!props.user.email_verified_at"
-                                />
-                                <Label for="verification" class="cursor-pointer">
-                                    {{ props.user.email_verified_at ? 'Email Terverifikasi' : 'Email Belum Terverifikasi' }}
-                                </Label>
+                            <!-- Email Verification Status -->
+                            <div class="mt-4 pt-4 border-t">
+                                <p class="text-sm font-medium mb-3">Status Verifikasi Email</p>
+                                <div class="flex items-center gap-2">
+                                    <Switch
+                                        :id="'verification'"
+                                        :disabled="true"
+                                        :checked="isEmailVerified"
+                                    />
+                                    <Label for="verification" class="cursor-pointer">
+                                        {{ isEmailVerified ? 'Email Terverifikasi' : 'Email Belum Terverifikasi' }}
+                                    </Label>
+                                </div>
+
+                                <div class="flex gap-2 mt-3" v-if="!isEmailVerified">
+                                    <Button 
+                                        type="button" 
+                                        variant="outline" 
+                                        size="sm"
+                                        @click="resendVerificationEmail" 
+                                        :disabled="isResendingVerification"
+                                    >
+                                        <Mail class="h-4 w-4 mr-2" />
+                                        {{ isResendingVerification ? 'Mengirim...' : 'Kirim Ulang Verifikasi' }}
+                                    </Button>
+
+                                    <Button 
+                                        type="button" 
+                                        variant="outline" 
+                                        size="sm"
+                                        @click="markEmailAsVerified" 
+                                        :disabled="isMarkingVerified"
+                                    >
+                                        <CheckCircle class="h-4 w-4 mr-2" />
+                                        {{ isMarkingVerified ? 'Memproses...' : 'Tandai Sebagai Terverifikasi' }}
+                                    </Button>
+                                </div>
                             </div>
 
                             <div class="pt-4 border-t">
