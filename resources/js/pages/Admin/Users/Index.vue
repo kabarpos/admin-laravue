@@ -2,25 +2,38 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import ConfirmationDialog from '@/components/ui/ConfirmationDialog.vue';
-import { MoreHorizontal, Plus, Check, X, Trash2, Edit, Shield, Eye } from 'lucide-vue-next';
+import { MoreHorizontal, Plus, Check, X, Trash2, Edit, Shield, Eye, Search, Filter, RefreshCw } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent } from '@/components/ui/card';
+import debounce from 'lodash/debounce';
 
 // Referensi pengguna yang sedang diproses
 const processingUser = ref(null);
 // State untuk menampilkan loading
 const loading = ref(false);
+const isFiltering = ref(false);
+
+// State untuk filter
+const filters = ref({
+  search: '',
+  status: '',
+  role: ''
+});
 
 // State untuk dialog konfirmasi
 const selectedUser = ref(null);
 const showActivationDialog = ref(false);
 const showBlockDialog = ref(false);
 const showDeleteDialog = ref(false);
+const showFilterPanel = ref(false);
 
 // Breadcrumbs untuk navigasi
 const breadcrumbs: BreadcrumbItem[] = [
@@ -32,6 +45,15 @@ const breadcrumbs: BreadcrumbItem[] = [
         title: 'Manajemen Pengguna',
         href: route('admin.users.index'),
     },
+];
+
+// Daftar status untuk filter
+const statusOptions = [
+  { value: '', label: 'Semua Status' },
+  { value: 'active', label: 'Aktif' },
+  { value: 'inactive', label: 'Tidak Aktif' },
+  { value: 'blocked', label: 'Diblokir' },
+  { value: 'rejected', label: 'Ditolak' }
 ];
 
 // Debug routes
@@ -73,7 +95,42 @@ const props = defineProps<{
             active: boolean;
         }>;
     };
+    filters?: {
+        search: string;
+        status: string;
+        role: string;
+    };
 }>();
+
+// Inisialisasi filter dari props jika tersedia
+if (props.filters) {
+    filters.value.search = props.filters.search || '';
+    filters.value.status = props.filters.status || '';
+    filters.value.role = props.filters.role || '';
+}
+
+// Mendapatkan daftar unique roles untuk filter
+const roleOptions = ref([
+  { value: '', label: 'Semua Peran' }
+]);
+
+// Ambil semua peran unik dari data pengguna
+onMounted(() => {
+  const uniqueRoles = new Set();
+  props.users.data.forEach(user => {
+    user.roles.forEach(role => {
+      uniqueRoles.add(role.name);
+    });
+  });
+  
+  // Tambahkan roles ke options
+  uniqueRoles.forEach(roleName => {
+    roleOptions.value.push({
+      value: roleName,
+      label: roleName
+    });
+  });
+});
 
 const getStatusColor = (status: string) => {
   switch(status) {
@@ -93,6 +150,42 @@ const formatDate = (dateString: string) => {
     year: 'numeric'
   }).format(date);
 };
+
+// Fungsi untuk melakukan pencarian dan filter
+const applyFilters = debounce(() => {
+  isFiltering.value = true;
+  
+  router.get(route('admin.users.index'), {
+    search: filters.value.search,
+    status: filters.value.status,
+    role: filters.value.role
+  }, {
+    preserveState: true,
+    replace: true,
+    onSuccess: () => {
+      isFiltering.value = false;
+    },
+    onError: () => {
+      isFiltering.value = false;
+      toast.error('Gagal', {
+        description: 'Gagal menerapkan filter',
+      });
+    }
+  });
+}, 500);
+
+// Hapus semua filter
+const resetFilters = () => {
+  filters.value.search = '';
+  filters.value.status = '';
+  filters.value.role = '';
+  applyFilters();
+};
+
+// Terapkan filter saat ada perubahan
+watch(() => filters.value.search, applyFilters);
+watch(() => filters.value.status, applyFilters);
+watch(() => filters.value.role, applyFilters);
 
 // Fungsi untuk menampilkan dialog aktivasi
 const showAktivasiDialog = (user) => {
@@ -204,6 +297,11 @@ const hapusUser = () => {
     }
   });
 };
+
+// Toggle panel filter
+const toggleFilterPanel = () => {
+  showFilterPanel.value = !showFilterPanel.value;
+};
 </script>
 
 <template>
@@ -222,12 +320,82 @@ const hapusUser = () => {
       </div>
 
       <div class="bg-card text-card-foreground rounded-xl shadow border border-sidebar-border/70 dark:border-sidebar-border overflow-hidden">
-        <div class="p-6">
-          <h2 class="text-lg font-medium">Daftar Pengguna</h2>
-          <p class="text-muted-foreground mt-1">Kelola pengguna dan akses mereka di sistem.</p>
+        <div class="p-6 border-b">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-medium">Daftar Pengguna</h2>
+              <p class="text-muted-foreground mt-1">Kelola pengguna dan akses mereka di sistem.</p>
+            </div>
+            
+            <div class="flex items-center gap-3">
+              <!-- Filter dan Pencarian -->
+              <div class="relative w-full sm:w-64">
+                <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  type="search" 
+                  placeholder="Cari nama atau email..."
+                  class="pl-9 w-full"
+                  v-model="filters.search"
+                />
+              </div>
+              
+              <Button 
+                variant="outline" 
+                size="icon" 
+                @click="toggleFilterPanel"
+                :class="{'bg-primary/10': showFilterPanel}"
+              >
+                <Filter class="h-4 w-4" />
+              </Button>
+              
+              <Button 
+                variant="outline"
+                size="icon"
+                @click="resetFilters"
+                :disabled="!filters.search && !filters.status && !filters.role"
+              >
+                <RefreshCw class="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          
+          <!-- Panel Filter yang bisa ditoggle -->
+          <Card v-if="showFilterPanel" class="mt-4">
+            <CardContent class="p-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <label class="text-sm font-medium">Status</label>
+                  <Select v-model="filters.status">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="option in statusOptions" :key="option.value" :value="option.value">
+                        {{ option.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div class="space-y-2">
+                  <label class="text-sm font-medium">Peran</label>
+                  <Select v-model="filters.role">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih peran" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="option in roleOptions" :key="option.value" :value="option.value">
+                        {{ option.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
         
-        <div class="border-t overflow-x-auto">
+        <div class="overflow-x-auto">
           <Table class="w-full">
             <TableHeader>
               <TableRow class="hover:bg-transparent border-b border-border">
@@ -241,76 +409,99 @@ const hapusUser = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow v-for="user in props.users.data" :key="user.id" class="border-b border-border/60 hover:bg-muted/20">
-                <TableCell class="py-3.5 px-6 align-middle font-medium">{{ user.name }}</TableCell>
-                <TableCell class="py-3.5 px-6 align-middle text-sm">{{ user.email }}</TableCell>
-                <TableCell class="py-3.5 px-6 align-middle text-sm hidden md:table-cell">{{ user.whatsapp || '-' }}</TableCell>
-                <TableCell class="py-3.5 px-6 align-middle">
-                  <Badge :class="getStatusColor(user.status)" class="px-2.5 py-0.5 text-xs font-medium">
-                    {{ user.status === 'active' ? 'Aktif' : 
-                       user.status === 'inactive' ? 'Tidak Aktif' : 
-                       user.status === 'blocked' ? 'Diblokir' : 'Ditolak' }}
-                  </Badge>
-                </TableCell>
-                <TableCell class="py-3.5 px-6 align-middle hidden md:table-cell">
-                  <div class="flex gap-1.5 flex-wrap">
-                    <Badge v-for="role in user.roles" :key="role.id" variant="outline" class="capitalize text-xs px-2 py-0.5">
-                      {{ role.name }}
-                    </Badge>
+              <TableRow v-if="isFiltering" class="border-b border-border">
+                <TableCell colspan="7" class="py-12 text-center">
+                  <div class="flex flex-col items-center justify-center gap-2">
+                    <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+                    <span class="text-sm text-muted-foreground">Memuat data...</span>
                   </div>
                 </TableCell>
-                <TableCell class="py-3.5 px-6 align-middle hidden md:table-cell text-sm text-muted-foreground">{{ formatDate(user.created_at) }}</TableCell>
-                <TableCell class="py-3.5 px-6 align-middle text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" class="h-8 w-8 cursor-pointer">
-                        <MoreHorizontal class="h-4 w-4" />
-                        <span class="sr-only">Menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" class="w-[160px]">
-                      <Link :href="route('admin.users.show', user.id)" class="w-full">
-                        <DropdownMenuItem class="flex items-center gap-2 cursor-pointer py-1.5">
-                          <Eye class="h-4 w-4" />
-                          <span>Lihat Detail</span>
-                        </DropdownMenuItem>
-                      </Link>
-                      <Link :href="route('admin.users.edit', user.id)" class="w-full">
-                        <DropdownMenuItem class="flex items-center gap-2 cursor-pointer py-1.5">
-                          <Edit class="h-4 w-4" />
-                          <span>Edit</span>
-                        </DropdownMenuItem>
-                      </Link>
-                      <DropdownMenuItem 
-                        v-if="user.status !== 'active'" 
-                        @click="showAktivasiDialog(user)"
-                        class="flex items-center gap-2 cursor-pointer py-1.5"
-                        :disabled="loading && processingUser === user.id"
-                      >
-                        <Check class="h-4 w-4" />
-                        <span>{{ loading && processingUser === user.id ? 'Memproses...' : 'Aktifkan' }}</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        v-if="user.status !== 'blocked'" 
-                        @click="showBlokirDialog(user)"
-                        class="flex items-center gap-2 cursor-pointer py-1.5 text-red-600"
-                        :disabled="loading && processingUser === user.id"
-                      >
-                        <X class="h-4 w-4" />
-                        <span>{{ loading && processingUser === user.id ? 'Memproses...' : 'Blokir' }}</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        @click="showHapusDialog(user)"
-                        class="flex items-center gap-2 cursor-pointer py-1.5 text-red-600"
-                        :disabled="loading && processingUser === user.id"
-                      >
-                        <Trash2 class="h-4 w-4" />
-                        <span>{{ loading && processingUser === user.id ? 'Memproses...' : 'Hapus' }}</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+              </TableRow>
+              
+              <TableRow v-else-if="props.users.data.length === 0" class="border-b border-border">
+                <TableCell colspan="7" class="py-12 text-center">
+                  <div class="flex flex-col items-center justify-center gap-2">
+                    <div class="bg-muted rounded-full p-3">
+                      <Search class="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <span class="text-lg font-medium">Tidak ada pengguna ditemukan</span>
+                    <span class="text-sm text-muted-foreground">Coba ubah filter atau buat pengguna baru</span>
+                  </div>
                 </TableCell>
               </TableRow>
+              
+              <template v-else>
+                <TableRow v-for="user in props.users.data" :key="user.id" class="border-b border-border/60 hover:bg-muted/20">
+                  <TableCell class="py-3.5 px-6 align-middle font-medium">{{ user.name }}</TableCell>
+                  <TableCell class="py-3.5 px-6 align-middle text-sm">{{ user.email }}</TableCell>
+                  <TableCell class="py-3.5 px-6 align-middle text-sm hidden md:table-cell">{{ user.whatsapp || '-' }}</TableCell>
+                  <TableCell class="py-3.5 px-6 align-middle">
+                    <Badge :class="getStatusColor(user.status)" class="px-2.5 py-0.5 text-xs font-medium">
+                      {{ user.status === 'active' ? 'Aktif' : 
+                         user.status === 'inactive' ? 'Tidak Aktif' : 
+                         user.status === 'blocked' ? 'Diblokir' : 'Ditolak' }}
+                    </Badge>
+                  </TableCell>
+                  <TableCell class="py-3.5 px-6 align-middle hidden md:table-cell">
+                    <div class="flex gap-1.5 flex-wrap">
+                      <Badge v-for="role in user.roles" :key="role.id" variant="outline" class="capitalize text-xs px-2 py-0.5">
+                        {{ role.name }}
+                      </Badge>
+                    </div>
+                  </TableCell>
+                  <TableCell class="py-3.5 px-6 align-middle hidden md:table-cell text-sm text-muted-foreground">{{ formatDate(user.created_at) }}</TableCell>
+                  <TableCell class="py-3.5 px-6 align-middle text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" class="h-8 w-8 cursor-pointer">
+                          <MoreHorizontal class="h-4 w-4" />
+                          <span class="sr-only">Menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" class="w-[160px]">
+                        <Link :href="route('admin.users.show', user.id)" class="w-full">
+                          <DropdownMenuItem class="flex items-center gap-2 cursor-pointer py-1.5">
+                            <Eye class="h-4 w-4" />
+                            <span>Lihat Detail</span>
+                          </DropdownMenuItem>
+                        </Link>
+                        <Link :href="route('admin.users.edit', user.id)" class="w-full">
+                          <DropdownMenuItem class="flex items-center gap-2 cursor-pointer py-1.5">
+                            <Edit class="h-4 w-4" />
+                            <span>Edit</span>
+                          </DropdownMenuItem>
+                        </Link>
+                        <DropdownMenuItem 
+                          v-if="user.status !== 'active'" 
+                          @click="showAktivasiDialog(user)"
+                          class="flex items-center gap-2 cursor-pointer py-1.5"
+                          :disabled="loading && processingUser === user.id"
+                        >
+                          <Check class="h-4 w-4" />
+                          <span>{{ loading && processingUser === user.id ? 'Memproses...' : 'Aktifkan' }}</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          v-if="user.status !== 'blocked'" 
+                          @click="showBlokirDialog(user)"
+                          class="flex items-center gap-2 cursor-pointer py-1.5 text-red-600"
+                          :disabled="loading && processingUser === user.id"
+                        >
+                          <X class="h-4 w-4" />
+                          <span>{{ loading && processingUser === user.id ? 'Memproses...' : 'Blokir' }}</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          @click="showHapusDialog(user)"
+                          class="flex items-center gap-2 cursor-pointer py-1.5 text-red-600"
+                          :disabled="loading && processingUser === user.id"
+                        >
+                          <Trash2 class="h-4 w-4" />
+                          <span>{{ loading && processingUser === user.id ? 'Memproses...' : 'Hapus' }}</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              </template>
             </TableBody>
           </Table>
         </div>

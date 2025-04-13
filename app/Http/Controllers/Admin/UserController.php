@@ -16,9 +16,33 @@ class UserController extends Controller
     /**
      * Display a listing of users.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $usersData = User::with('roles')->paginate(10);
+        $query = User::with('roles');
+        
+        // Filter berdasarkan pencarian (nama atau email)
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+        
+        // Filter berdasarkan status
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+        
+        // Filter berdasarkan peran
+        if ($request->filled('role')) {
+            $roleName = $request->input('role');
+            $query->whereHas('roles', function($q) use ($roleName) {
+                $q->where('name', $roleName);
+            });
+        }
+        
+        $usersData = $query->paginate(10)->withQueryString();
         
         return Inertia::render('admin/Users/Index', [
             'users' => [
@@ -33,6 +57,11 @@ class UserController extends Controller
                     'to' => $usersData->lastItem(),
                     'total' => $usersData->total(),
                 ],
+            ],
+            'filters' => [
+                'search' => $request->input('search', ''),
+                'status' => $request->input('status', ''),
+                'role' => $request->input('role', ''),
             ],
         ]);
     }
@@ -103,6 +132,7 @@ class UserController extends Controller
         return Inertia::render('admin/Users/Edit', [
             'user' => $user,
             'roles' => $roles,
+            'userRoles' => $user->roles->pluck('id')->toArray(),
         ]);
     }
 

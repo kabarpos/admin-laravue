@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\EmailController;
 use App\Http\Controllers\Admin\EmailSettingController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
@@ -25,7 +26,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Manajemen Permission
     Route::resource('permissions', PermissionController::class);
     
-    // Pengaturan Email
+    // Pengaturan Email (Format Baru)
+    Route::get('email', [EmailController::class, 'index'])->name('email.index');
+    Route::put('email', [EmailController::class, 'update'])->name('email.update');
+    Route::post('email/test', [EmailController::class, 'test'])->name('email.test');
+    
+    // Deprecated - akan dihapus setelah migrasi selesai
     Route::get('email-settings', [EmailSettingController::class, 'edit'])->name('email-settings.edit');
     Route::put('email-settings', [EmailSettingController::class, 'update'])->name('email-settings.update');
     Route::post('email-settings/test', [EmailSettingController::class, 'sendTestEmail'])->name('email-settings.test');

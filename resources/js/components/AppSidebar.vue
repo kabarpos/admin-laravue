@@ -35,7 +35,7 @@ const adminNavItems: NavItem[] = [
     },
     {
         title: 'Pengaturan Email',
-        href: route('admin.email-settings.edit'),
+        href: route('admin.email.index'),
         icon: Mail,
     }
 ];

@@ -36,7 +36,7 @@ const breadcrumbs = [
   },
   {
     title: 'Pengaturan Email',
-    href: route('admin.email-settings.edit'),
+    href: route('admin.email.index'),
   },
 ];
 
@@ -92,7 +92,7 @@ const testEmail = ref('');
 
 const updateEmailSettings = () => {
   processing.value = true;
-  form.put(route('admin.email-settings.update'), {
+  form.put(route('admin.email.update'), {
     onSuccess: () => {
       toast.success('Berhasil', {
         description: 'Pengaturan email berhasil disimpan',
@@ -110,7 +110,7 @@ const updateEmailSettings = () => {
 
 const sendTestEmail = () => {
   processing.value = true;
-  axios.post(route('admin.email-settings.test'), {
+  axios.post(route('admin.email.test'), {
     test_email: testEmail.value,
   }).then(() => {
     toast.success('Berhasil', {
@@ -128,6 +128,8 @@ const sendTestEmail = () => {
 </script>
 
 <template>
+  <Head title="Pengaturan Email" />
+  
   <AppLayout :breadcrumbs="breadcrumbs">
     <div class="flex h-full flex-1 flex-col gap-4 p-4 md:p-6">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -248,16 +250,23 @@ const sendTestEmail = () => {
       :open="showTestEmailDialog"
       @update:open="showTestEmailDialog = $event"
       title="Kirim Email Tes"
-      confirmLabel="Kirim"
       :icon="Mail"
-      @confirm="sendTestEmail"
+      confirmLabel="Kirim Email"
+      :loading="processing"
+      @confirm="sendTestEmail()"
     >
-      <div class="mb-4">
-        <Label for="test_email">Alamat Email Tujuan</Label>
-        <Input v-model="testEmail" id="test_email" type="email" class="mt-1.5" />
+      <div class="py-2">
+        <Label for="test_email">Alamat Email Penerima</Label>
+        <Input 
+          v-model="testEmail" 
+          id="test_email" 
+          type="email" 
+          placeholder="Masukkan alamat email untuk pengujian"
+          class="mt-1.5" 
+        />
       </div>
-      <p class="text-sm text-muted-foreground">
-        Email tes akan dikirim untuk memastikan konfigurasi email berjalan dengan baik.
+      <p class="text-sm text-muted-foreground mt-2">
+        Email tes akan dikirim untuk memverifikasi pengaturan SMTP Anda.
       </p>
     </ConfirmationDialog>
   </AppLayout>
