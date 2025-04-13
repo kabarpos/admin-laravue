@@ -1,52 +1,71 @@
 <script setup lang="ts">
 import Heading from '@/components/Heading.vue';
-import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
+import { computed, onMounted, ref } from 'vue';
+import { User, KeyRound, Palette } from 'lucide-vue-next';
 
-const sidebarNavItems: NavItem[] = [
+const tabNavItems: NavItem[] = [
     {
         title: 'Profile',
         href: '/settings/profile',
+        icon: User
     },
     {
         title: 'Password',
         href: '/settings/password',
+        icon: KeyRound
     },
     {
         title: 'Appearance',
         href: '/settings/appearance',
+        icon: Palette
     },
 ];
 
-const page = usePage();
+// Gunakan ref untuk menyimpan path
+const currentPath = ref('');
 
-const currentPath = page.props.ziggy?.location ? new URL(page.props.ziggy.location).pathname : '';
+// Tentukan tab aktif berdasarkan URL saat ini
+const activeTab = computed(() => {
+    const pathParts = currentPath.value.split('/');
+    return pathParts[pathParts.length - 1] || 'profile';
+});
+
+onMounted(() => {
+    // Ambil path dari window.location saat component di-mount
+    currentPath.value = window.location.pathname;
+});
 </script>
 
 <template>
     <div class="px-4 py-6">
-        <Heading title="Settings" description="Manage your profile and account settings" />
+        <Heading title="Pengaturan Profil" description="Kelola pengaturan profil dan akun Anda" />
 
-        <div class="flex flex-col space-y-8 md:space-y-0 lg:flex-row lg:space-x-12 lg:space-y-0">
-            <aside class="w-full max-w-xl lg:w-48">
-                <nav class="flex flex-col space-x-0 space-y-1">
-                    <Button
-                        v-for="item in sidebarNavItems"
-                        :key="item.href"
-                        variant="ghost"
-                        :class="['w-full justify-start', { 'bg-muted': currentPath === item.href }]"
+        <div class="mt-6 space-y-8">
+            <!-- Tab Navigation dengan Komponen Shadcn UI -->
+            <Tabs :default-value="activeTab" class="w-full">
+                <TabsList class="w-full md:w-auto mb-6">
+                    <TabsTrigger 
+                        v-for="item in tabNavItems" 
+                        :key="item.href" 
+                        :value="item.href.split('/').pop() || ''"
+                        class="flex items-center gap-2"
                         as-child
                     >
                         <Link :href="item.href">
-                            {{ item.title }}
+                            <div class="flex items-center gap-2">
+                                <component :is="item.icon" class="h-4 w-4" />
+                                <span>{{ item.title }}</span>
+                            </div>
                         </Link>
-                    </Button>
-                </nav>
-            </aside>
+                    </TabsTrigger>
+                </TabsList>
+            </Tabs>
 
-            <Separator class="my-6 md:hidden" />
+            <Separator class="my-6" />
 
             <div class="flex-1 md:max-w-2xl">
                 <section class="max-w-xl space-y-12">

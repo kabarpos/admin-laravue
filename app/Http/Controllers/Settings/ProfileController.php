@@ -29,13 +29,29 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $user->fill($request->validated());
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        // Handle avatar upload jika ada
+        if ($request->hasFile('avatar')) {
+            // Hapus file avatar lama jika ada
+            if ($user->profile_photo_path) {
+                $oldPath = storage_path('app/public/' . $user->profile_photo_path);
+                if (file_exists($oldPath)) {
+                    unlink($oldPath);
+                }
+            }
+            
+            // Upload avatar baru
+            $path = $request->file('avatar')->store('profile-photos', 'public');
+            $user->profile_photo_path = $path;
         }
 
-        $request->user()->save();
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
 
         return to_route('profile.edit');
     }
@@ -59,5 +75,27 @@ class ProfileController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    /**
+     * Delete the user's profile photo.
+     */
+    public function destroyAvatar(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        
+        // Hapus file avatar jika ada
+        if ($user->profile_photo_path) {
+            $path = storage_path('app/public/' . $user->profile_photo_path);
+            if (file_exists($path)) {
+                unlink($path);
+            }
+            
+            // Kosongkan path photo di database
+            $user->profile_photo_path = null;
+            $user->save();
+        }
+        
+        return to_route('profile.edit');
     }
 }

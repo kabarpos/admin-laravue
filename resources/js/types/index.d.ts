@@ -50,6 +50,8 @@ export interface User {
     updated_at?: string;
     roles?: { id: number; name: string }[];
     permissions?: string[];
+    profile_photo_path?: string | null;
+    is_active?: boolean;
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;
