@@ -17,33 +17,53 @@ class RoleAndPermissionSeeder extends Seeder
         // Reset cached roles dan permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
+        // Hapus role editor jika ada
+        Role::where('name', 'editor')->delete();
+
         // Buat permissions untuk modul user
-        Permission::create(['name' => 'view users']);
-        Permission::create(['name' => 'create users']);
-        Permission::create(['name' => 'edit users']);
-        Permission::create(['name' => 'delete users']);
-        Permission::create(['name' => 'approve users']);
-        Permission::create(['name' => 'reject users']);
-        Permission::create(['name' => 'block users']);
-
-        // Buat permissions untuk modul role
-        Permission::create(['name' => 'view roles']);
-        Permission::create(['name' => 'create roles']);
-        Permission::create(['name' => 'edit roles']);
-        Permission::create(['name' => 'delete roles']);
-
-        // Buat permissions untuk modul permission
-        Permission::create(['name' => 'view permissions']);
-        Permission::create(['name' => 'create permissions']);
-        Permission::create(['name' => 'edit permissions']);
-        Permission::create(['name' => 'delete permissions']);
+        $this->createPermissions([
+            'view users',
+            'create users',
+            'edit users',
+            'delete users',
+            'approve users',
+            'reject users',
+            'block users',
+            
+            // Permissions untuk modul role
+            'view roles',
+            'create roles',
+            'edit roles',
+            'delete roles',
+            
+            // Permissions untuk modul permission
+            'view permissions',
+            'create permissions',
+            'edit permissions',
+            'delete permissions',
+            
+            // Permissions untuk user biasa
+            'view own profile',
+            'edit own profile'
+        ]);
 
         // Buat role admin dan berikan semua permissions
-        $adminRole = Role::create(['name' => 'admin']);
-        $adminRole->givePermissionTo(Permission::all());
+        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $adminRole->syncPermissions(Permission::all());
 
         // Buat role user biasa dan berikan beberapa permissions
-        $userRole = Role::create(['name' => 'user']);
-        // User biasa tidak memiliki akses ke admin panel
+        $userRole = Role::firstOrCreate(['name' => 'user']);
+        // User biasa hanya memiliki akses ke profil sendiri
+        $userRole->syncPermissions(['view own profile', 'edit own profile']);
+    }
+    
+    /**
+     * Buat permission jika belum ada
+     */
+    private function createPermissions(array $permissions): void
+    {
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission]);
+        }
     }
 }

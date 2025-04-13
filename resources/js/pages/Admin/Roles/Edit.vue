@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm, Link } from '@inertiajs/vue3';
+import { Head, useForm, router } from '@inertiajs/vue3';
+import { ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft } from 'lucide-vue-next';
+import { useRoles } from '@/composables/useRoles';
+import type { Role, Permission } from '@/types/models';
 
-// Breadcrumbs for navigation
+// Breadcrumbs untuk navigasi
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Admin',
@@ -26,80 +27,82 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-// Definisi props dari controller
+// Props dari controller
 const props = defineProps<{
-    role: {
-        id: number;
-        name: string;
-        permissions: Array<{
-            id: number;
-            name: string;
-        }>;
-    };
-    permissions: Array<{
-        id: number;
-        name: string;
-    }>;
+    role: Role & { permissions: Permission[] };
+    permissions: Permission[];
 }>();
 
-// Mapping permission ids
-const rolePermissionIds = props.role.permissions.map(permission => permission.id);
+// State
+const roleError = ref('');
+const { loading, updateRole } = useRoles();
 
-// Form untuk edit peran
+// Form untuk edit
 const form = useForm({
     name: props.role.name,
-    permissions: [...rolePermissionIds], // Gunakan spread operator untuk membuat array baru
-    _method: 'PUT',
+    permissions: props.role.permissions.map(p => p.id),
 });
 
-// State untuk mengelola permission yang dipilih
+// Untuk menampilkan error jika tidak ada permissions yang dipilih
+watch(() => form.permissions, (newValue) => {
+    if (newValue.length === 0) {
+        roleError.value = 'Peran harus memiliki minimal 1 perizinan';
+    } else {
+        roleError.value = '';
+    }
+}, { immediate: true });
+
+// Cek apakah permission sudah dipilih
 const isPermissionSelected = (permissionId: number) => {
-    return form.permissions.includes(permissionId);
+    return form.permissions.includes(Number(permissionId));
 };
 
-// Toggle permission selection
+// Toggle selection untuk permission
 const togglePermission = (permissionId: number) => {
+    permissionId = Number(permissionId);
     const index = form.permissions.indexOf(permissionId);
     if (index === -1) {
         form.permissions.push(permissionId);
     } else {
-        form.permissions.splice(index, 1);
+        // Jangan izinkan menghapus permission jika hanya tersisa 1
+        if (form.permissions.length > 1) {
+            form.permissions.splice(index, 1);
+        } else {
+            // Tampilkan error jika user mencoba menghapus permission terakhir
+            roleError.value = 'Peran harus memiliki minimal 1 perizinan';
+        }
     }
 };
 
 // Submit form
 const submit = () => {
-    form.post(route('admin.roles.update', props.role.id), {
-        onSuccess: () => {
-            // Form akan di-reset otomatis setelah berhasil
-        },
-    });
+    // Validasi sebelum submit
+    if (form.permissions.length === 0) {
+        roleError.value = 'Peran harus memiliki minimal 1 perizinan';
+        return;
+    }
+
+    form.put(route('admin.roles.update', props.role.id));
 };
 </script>
 
 <template>
-    <Head title="Edit Role" />
+    <Head title="Edit Peran" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 p-4 md:p-6">
             <div class="flex items-center gap-4">
-                <Link :href="route('admin.roles.index')">
-                    <Button 
-                        variant="outline" 
-                        size="icon" 
-                        class="h-7 w-7 cursor-pointer"
-                    >
-                        <ArrowLeft class="h-4 w-4" />
-                    </Button>
-                </Link>
-                <h1 class="text-2xl font-bold">Edit Role</h1>
+                <Button 
+                    variant="outline" 
+                    size="icon" 
+                    class="h-7 w-7 cursor-pointer"
+                    type="button"
+                    @click="router.visit(route('admin.roles.index'))"
+                >
+                    <i class="i-lucide-arrow-left h-4 w-4"></i>
+                </Button>
+                <h1 class="text-2xl font-bold">Edit Peran</h1>
             </div>
-
-            <Alert v-if="role.name === 'admin'" class="mb-4 bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                <AlertDescription>
-                    Peran Admin merupakan peran sistem yang penting. Modifikasi pada peran ini dapat memengaruhi fungsi sistem secara keseluruhan.
-                </AlertDescription>
-            </Alert>
 
             <form @submit.prevent="submit">
                 <div class="grid gap-4 md:grid-cols-2">
@@ -107,7 +110,7 @@ const submit = () => {
                     <Card>
                         <CardHeader>
                             <CardTitle>Informasi Peran</CardTitle>
-                            <CardDescription>Ubah informasi dasar peran</CardDescription>
+                            <CardDescription>Edit informasi dasar peran</CardDescription>
                         </CardHeader>
                         <CardContent class="space-y-4">
                             <div class="space-y-2">
@@ -117,38 +120,26 @@ const submit = () => {
                                     v-model="form.name" 
                                     type="text" 
                                     placeholder="Masukkan nama peran" 
-                                    :error="form.errors.name"
-                                    :disabled="role.name === 'admin'"
+                                    :disabled="props.role.name === 'admin' || loading"
                                 />
                                 <p v-if="form.errors.name" class="text-sm text-red-500">{{ form.errors.name }}</p>
-                            </div>
-                            
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-sm font-medium">Jumlah Izin</p>
-                                        <p class="text-sm text-muted-foreground">Peran ini memiliki {{ form.permissions.length }} izin</p>
-                                    </div>
-                                </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <!-- Izin -->
+                    <!-- Perizinan Peran -->
                     <Card>
                         <CardHeader>
-                            <CardTitle>Izin</CardTitle>
-                            <CardDescription>Ubah izin yang dimiliki oleh peran ini</CardDescription>
+                            <CardTitle>Perizinan Peran</CardTitle>
+                            <CardDescription>Pilih perizinan yang dimiliki oleh peran ini (wajib minimal 1 perizinan)</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div class="space-y-4">
-                                <Alert v-if="props.permissions.length === 0" class="bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                                    <AlertDescription>
-                                        Tidak ada izin yang tersedia. Tambahkan izin terlebih dahulu.
-                                    </AlertDescription>
-                                </Alert>
+                                <div v-if="props.permissions.length === 0" class="bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 p-3 rounded-md text-sm">
+                                    Tidak ada perizinan yang tersedia. Tambahkan perizinan terlebih dahulu.
+                                </div>
 
-                                <div v-else class="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto pr-2">
+                                <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-2">
                                     <div 
                                         v-for="permission in props.permissions" 
                                         :key="permission.id" 
@@ -158,31 +149,37 @@ const submit = () => {
                                             :id="`permission-${permission.id}`" 
                                             :checked="isPermissionSelected(permission.id)"
                                             @update:checked="togglePermission(permission.id)"
+                                            :disabled="loading"
                                         />
-                                        <Label :for="`permission-${permission.id}`">{{ permission.name }}</Label>
+                                        <Label :for="`permission-${permission.id}`" class="cursor-pointer">
+                                            {{ permission.name }}
+                                        </Label>
                                     </div>
                                 </div>
+                                
+                                <!-- Error untuk permissions -->
                                 <p v-if="form.errors.permissions" class="text-sm text-red-500">{{ form.errors.permissions }}</p>
+                                <p v-if="roleError" class="text-sm text-red-500">{{ roleError }}</p>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                <div class="mt-6 flex items-center justify-end gap-4">
-                    <Link :href="route('admin.roles.index')">
-                        <Button 
-                            type="button" 
-                            variant="outline"
-                            class="cursor-pointer"
-                        >
-                            Batal
-                        </Button>
-                    </Link>
+                <div class="mt-6 flex justify-end space-x-2">
                     <Button 
-                        type="submit" 
-                        :disabled="form.processing || role.name === 'admin'"
+                        type="button" 
+                        variant="outline" 
+                        @click="router.visit(route('admin.roles.index'))"
+                        :disabled="loading"
                     >
-                        Simpan Perubahan
+                        Batal
+                    </Button>
+                    <Button 
+                        type="submit"
+                        :disabled="loading || form.processing || roleError !== ''"
+                        class="px-6"
+                    >
+                        {{ loading || form.processing ? 'Memproses...' : 'Simpan Perubahan' }}
                     </Button>
                 </div>
             </form>

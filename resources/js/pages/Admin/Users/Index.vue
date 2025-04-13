@@ -60,6 +60,7 @@ const props = defineProps<{
                 id: number;
                 name: string;
             }>;
+            whatsapp?: string;
         }>;
         meta?: {
             total?: number;
@@ -232,6 +233,7 @@ const hapusUser = () => {
               <TableRow class="hover:bg-transparent border-b border-border">
                 <TableHead class="py-3 px-6 font-medium text-muted-foreground">Nama</TableHead>
                 <TableHead class="py-3 px-6 font-medium text-muted-foreground">Email</TableHead>
+                <TableHead class="py-3 px-6 font-medium text-muted-foreground hidden md:table-cell">WhatsApp</TableHead>
                 <TableHead class="py-3 px-6 font-medium text-muted-foreground">Status</TableHead>
                 <TableHead class="py-3 px-6 font-medium text-muted-foreground hidden md:table-cell">Peran</TableHead>
                 <TableHead class="py-3 px-6 font-medium text-muted-foreground hidden md:table-cell">Tanggal Daftar</TableHead>
@@ -242,6 +244,7 @@ const hapusUser = () => {
               <TableRow v-for="user in props.users.data" :key="user.id" class="border-b border-border/60 hover:bg-muted/20">
                 <TableCell class="py-3.5 px-6 align-middle font-medium">{{ user.name }}</TableCell>
                 <TableCell class="py-3.5 px-6 align-middle text-sm">{{ user.email }}</TableCell>
+                <TableCell class="py-3.5 px-6 align-middle text-sm hidden md:table-cell">{{ user.whatsapp || '-' }}</TableCell>
                 <TableCell class="py-3.5 px-6 align-middle">
                   <Badge :class="getStatusColor(user.status)" class="px-2.5 py-0.5 text-xs font-medium">
                     {{ user.status === 'active' ? 'Aktif' : 

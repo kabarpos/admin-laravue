@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\DB;
 
 class RoleController extends Controller
 {
@@ -15,7 +16,10 @@ class RoleController extends Controller
      */
     public function index()
     {
-        $roles = Role::with('permissions')->paginate(10);
+        // Ambil peran dengan permission terkait dan hitung jumlah pengguna
+        $roles = Role::with('permissions')
+            ->withCount('users')
+            ->paginate(10);
         
         return Inertia::render('admin/Roles/Index', [
             'roles' => $roles,
@@ -51,7 +55,7 @@ class RoleController extends Controller
         }
 
         return redirect()->route('admin.roles.index')
-            ->with('message', 'Role berhasil dibuat.');
+            ->with('message', 'Peran berhasil dibuat.');
     }
 
     /**
@@ -60,6 +64,7 @@ class RoleController extends Controller
     public function show(Role $role)
     {
         $role->load('permissions');
+        $role->loadCount('users');
         
         return Inertia::render('admin/Roles/Show', [
             'role' => $role,
@@ -97,7 +102,7 @@ class RoleController extends Controller
         }
 
         return redirect()->route('admin.roles.index')
-            ->with('message', 'Role berhasil diperbarui.');
+            ->with('message', 'Peran berhasil diperbarui.');
     }
 
     /**
@@ -108,12 +113,28 @@ class RoleController extends Controller
         // Prevent deleting key roles like admin, super-admin, etc.
         if (in_array($role->name, ['admin', 'super-admin'])) {
             return redirect()->route('admin.roles.index')
-                ->with('error', 'Role ini tidak dapat dihapus karena merupakan role sistem.');
+                ->with('error', 'Peran ini tidak dapat dihapus karena merupakan peran sistem.');
         }
         
         $role->delete();
 
         return redirect()->route('admin.roles.index')
-            ->with('message', 'Role berhasil dihapus.');
+            ->with('message', 'Peran berhasil dihapus.');
+    }
+    
+    /**
+     * Sync permissions for a role
+     */
+    public function syncPermissions(Request $request, Role $role)
+    {
+        $validated = $request->validate([
+            'permissions' => 'required|array',
+            'permissions.*' => 'exists:permissions,id',
+        ]);
+        
+        $role->syncPermissions($validated['permissions']);
+        
+        return redirect()->route('admin.roles.show', $role)
+            ->with('message', 'Perizinan peran berhasil diperbarui.');
     }
 }

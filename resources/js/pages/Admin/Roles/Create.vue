@@ -108,7 +108,7 @@ const submit = () => {
                             <Alert class="mt-4 bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
                                 <AlertDescription>
                                     Peran merupakan kumpulan izin yang dapat diberikan kepada pengguna.
-                                    Contohnya: Admin, Editor, User, dsb.
+                                    Contohnya: Admin, User, Moderator, dsb.
                                 </AlertDescription>
                             </Alert>
                         </CardContent>

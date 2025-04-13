@@ -37,6 +37,7 @@ const props = defineProps<{
         id: number;
         name: string;
         email: string;
+        whatsapp: string | null;
         status: string;
         email_verified_at: string | null;
     };
@@ -57,6 +58,7 @@ const isMarkingVerified = ref(false);
 const form = useForm({
     name: props.user.name,
     email: props.user.email,
+    whatsapp: props.user.whatsapp || '',
     password: '',
     password_confirmation: '',
     status: props.user.status,
@@ -238,6 +240,18 @@ onMounted(() => {
                                     :error="form.errors.email"
                                 />
                                 <p v-if="form.errors.email" class="text-sm text-red-500">{{ form.errors.email }}</p>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label for="whatsapp">Nomor WhatsApp</Label>
+                                <Input 
+                                    id="whatsapp" 
+                                    v-model="form.whatsapp" 
+                                    type="tel" 
+                                    placeholder="Masukkan nomor WhatsApp"
+                                    :error="form.errors.whatsapp"
+                                />
+                                <p v-if="form.errors.whatsapp" class="text-sm text-red-500">{{ form.errors.whatsapp }}</p>
                             </div>
 
                             <!-- Email Verification Status -->

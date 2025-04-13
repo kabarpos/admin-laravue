@@ -43,6 +43,7 @@ const roleError = ref('');
 const form = useForm({
     name: '',
     email: '',
+    whatsapp: '',
     password: '',
     password_confirmation: '',
     status: 'active',
@@ -162,6 +163,18 @@ onMounted(() => {
                                     :error="form.errors.email"
                                 />
                                 <p v-if="form.errors.email" class="text-sm text-red-500">{{ form.errors.email }}</p>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label for="whatsapp">Nomor WhatsApp</Label>
+                                <Input 
+                                    id="whatsapp" 
+                                    v-model="form.whatsapp" 
+                                    type="tel" 
+                                    placeholder="Masukkan nomor WhatsApp"
+                                    :error="form.errors.whatsapp"
+                                />
+                                <p v-if="form.errors.whatsapp" class="text-sm text-red-500">{{ form.errors.whatsapp }}</p>
                             </div>
 
                             <div class="space-y-2">

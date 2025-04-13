@@ -112,7 +112,7 @@ const activities = ref([
   },
   {
     user: 'Admin',
-    action: 'membuat role baru: Editor',
+    action: 'menambahkan izin baru',
     time: '2 jam yang lalu'
   },
   {

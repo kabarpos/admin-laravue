@@ -20,6 +20,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     
     // Manajemen Role
     Route::resource('roles', RoleController::class);
+    Route::post('roles/{role}/permissions', [RoleController::class, 'syncPermissions'])->name('roles.permissions.sync');
     
     // Manajemen Permission
     Route::resource('permissions', PermissionController::class);

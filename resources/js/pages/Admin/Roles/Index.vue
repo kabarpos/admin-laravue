@@ -2,7 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -32,30 +32,36 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-// Data peran sample untuk tampilan awal
-const roles = ref([
-  { 
-    id: 1, 
-    name: 'admin',
-    permissions: ['view users', 'create users', 'edit users', 'delete users', 'approve users', 'reject users', 'view roles', 'create roles', 'edit roles', 'view permissions', 'create permissions', 'edit permissions'],
-    users_count: 1,
-    created_at: '2023-01-01'
-  },
-  { 
-    id: 2, 
-    name: 'user',
-    permissions: ['view own profile', 'edit own profile'],
-    users_count: 2,
-    created_at: '2023-01-02'
-  },
-  { 
-    id: 3, 
-    name: 'editor',
-    permissions: ['view users', 'view content', 'create content', 'edit content', 'delete content'],
-    users_count: 1,
-    created_at: '2023-01-03'
-  }
-]);
+// Definisi props dari controller
+const props = defineProps<{
+    roles: {
+        data: Array<{
+            id: number;
+            name: string;
+            permissions: Array<{
+                id: number;
+                name: string;
+            }>;
+            users_count?: number;
+            created_at: string;
+        }>;
+        meta?: {
+            total?: number;
+            current_page?: number;
+            last_page?: number;
+        };
+        links?: Array<{
+            url: string | null;
+            label: string;
+            active: boolean;
+        }>;
+    };
+}>();
+
+// Filter data peran untuk menghilangkan peran editor dari tampilan
+const filteredRoles = computed(() => {
+  return props.roles.data.filter(role => role.name !== 'editor');
+});
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -79,18 +85,24 @@ const hapusRole = () => {
   loading.value = true;
   processingRole.value = selectedRole.value.id;
   
-  // Simulasi penghapusan (akan diganti dengan panggilan API)
-  setTimeout(() => {
-    roles.value = roles.value.filter(role => role.id !== selectedRole.value.id);
-    
-    toast.success('Berhasil', {
-      description: `Peran ${selectedRole.value.name} berhasil dihapus`,
-    });
-    
-    showDeleteDialog.value = false;
-    loading.value = false;
-    processingRole.value = null;
-  }, 1000);
+  router.delete(route('admin.roles.destroy', selectedRole.value.id), {
+    onSuccess: () => {
+      toast.success('Berhasil', {
+        description: `Peran ${selectedRole.value.name} berhasil dihapus`,
+      });
+      showDeleteDialog.value = false;
+    },
+    onError: (errors) => {
+      toast.error('Gagal', {
+        description: `Terjadi kesalahan saat menghapus peran: ${errors.message || 'Unknown error'}`,
+      });
+      console.error('Error:', errors);
+    },
+    onFinish: () => {
+      loading.value = false;
+      processingRole.value = null;
+    }
+  });
 };
 </script>
 
@@ -127,7 +139,7 @@ const hapusRole = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow v-for="role in roles" :key="role.id" class="border-b border-border/60 hover:bg-muted/20">
+              <TableRow v-for="role in filteredRoles" :key="role.id" class="border-b border-border/60 hover:bg-muted/20">
                 <TableCell class="py-3.5 px-6 align-middle font-medium capitalize">{{ role.name }}</TableCell>
                 <TableCell class="py-3.5 px-6 align-middle">
                   <div class="flex gap-1.5 flex-wrap">
@@ -145,13 +157,15 @@ const hapusRole = () => {
                       <Badge v-if="role.permissions.length > 3" variant="outline" class="text-xs px-2 py-0.5 bg-muted">
                         +{{ role.permissions.length }} izin
                       </Badge>
-                      <Badge v-else v-for="permission in role.permissions.slice(0, 3)" :key="permission" variant="outline" class="text-xs px-2 py-0.5">
-                        {{ permission }}
+                      <Badge v-else v-for="permission in role.permissions.slice(0, 3)" :key="permission.id" variant="outline" class="text-xs px-2 py-0.5">
+                        {{ permission.name }}
                       </Badge>
                     </div>
                   </div>
                 </TableCell>
-                <TableCell class="py-3.5 px-6 align-middle hidden md:table-cell text-center text-sm text-muted-foreground">{{ role.users_count }}</TableCell>
+                <TableCell class="py-3.5 px-6 align-middle hidden md:table-cell text-center text-sm text-muted-foreground">
+                  {{ role.users_count || 0 }}
+                </TableCell>
                 <TableCell class="py-3.5 px-6 align-middle hidden md:table-cell text-sm text-muted-foreground">{{ formatDate(role.created_at) }}</TableCell>
                 <TableCell class="py-3.5 px-6 align-middle text-right">
                   <DropdownMenu>
@@ -192,6 +206,31 @@ const hapusRole = () => {
               </TableRow>
             </TableBody>
           </Table>
+        </div>
+        
+        <!-- Pagination -->
+        <div v-if="filteredRoles.length > 0" class="py-4 px-6 flex items-center justify-between border-t">
+          <div class="text-sm text-muted-foreground">
+            <span v-if="props.roles.meta && props.roles.meta.total">
+              Menampilkan {{ filteredRoles.length }} dari {{ props.roles.meta.total - 1 }} peran
+            </span>
+            <span v-else>
+              Menampilkan {{ filteredRoles.length }} peran
+            </span>
+          </div>
+          <div v-if="props.roles.links && props.roles.links.length > 2" class="flex gap-2">
+            <Link 
+              v-for="(link, i) in props.roles.links.slice(1, -1)" 
+              :key="i"
+              :href="link.url"
+              class="px-3 py-1 rounded text-sm border border-input"
+              :class="{ 
+                'bg-primary text-primary-foreground border-primary': link.active,
+                'cursor-pointer hover:bg-accent': !link.active && link.url
+              }"
+              v-html="link.label"
+            />
+          </div>
         </div>
       </div>
     </div>

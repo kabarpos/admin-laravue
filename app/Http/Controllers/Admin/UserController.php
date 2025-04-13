@@ -57,6 +57,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:users',
+            'whatsapp' => 'nullable|string|max:20|regex:/^\+?[0-9\s\-\(\)]+$/',
             'password' => 'required|string|min:8|confirmed',
             'status' => 'required|in:active,inactive,blocked,rejected',
             'role_ids' => 'required|array|min:1',
@@ -66,6 +67,7 @@ class UserController extends Controller
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'whatsapp' => $validated['whatsapp'] ?? null,
             'password' => Hash::make($validated['password']),
             'status' => $validated['status'],
         ]);
@@ -95,21 +97,12 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        // Ambil model roles
+        $user->load('roles');
         $roles = Role::all();
-        
-        // Ambil array ID peran langsung dari database untuk memastikan data valid
-        $userRoles = DB::table('model_has_roles')
-                        ->where('model_id', $user->id)
-                        ->where('model_type', get_class($user))
-                        ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
-                        ->pluck('roles.id')
-                        ->toArray();
         
         return Inertia::render('admin/Users/Edit', [
             'user' => $user,
             'roles' => $roles,
-            'userRoles' => $userRoles,
         ]);
     }
 
@@ -122,6 +115,7 @@ class UserController extends Controller
         $rules = [
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:users,email,'.$user->id,
+            'whatsapp' => 'nullable|string|max:20|regex:/^\+?[0-9\s\-\(\)]+$/',
             'status' => 'required|in:active,inactive,blocked,rejected',
             'role_ids' => 'required|array|min:1',
             'role_ids.*' => 'exists:roles,id',
@@ -131,6 +125,7 @@ class UserController extends Controller
         $data = [
             'name' => $request->name,
             'email' => $request->email,
+            'whatsapp' => $request->whatsapp,
             'status' => $request->status,
         ];
         
