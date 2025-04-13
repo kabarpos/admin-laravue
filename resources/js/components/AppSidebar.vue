@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
@@ -18,6 +17,11 @@ const mainNavItems: NavItem[] = [
 
 // Menu untuk administrasi
 const adminNavItems: NavItem[] = [
+    {
+        title: 'Dashboard Admin',
+        href: route('admin.dashboard'),
+        icon: LayoutGrid,
+    },
     {
         title: 'Manajemen Pengguna',
         href: route('admin.users.index'),
@@ -44,8 +48,6 @@ const adminNavItems: NavItem[] = [
         icon: Settings,
     }
 ];
-
-const footerNavItems: NavItem[] = [];
 </script>
 
 <template>
@@ -70,7 +72,6 @@ const footerNavItems: NavItem[] = [];
         </SidebarContent>
 
         <SidebarFooter>
-            <NavFooter :items="footerNavItems" />
             <NavUser />
         </SidebarFooter>
     </Sidebar>

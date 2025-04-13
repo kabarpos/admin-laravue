@@ -6,12 +6,70 @@ use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     // Dashboard Admin
     Route::get('/', function () {
-        return inertia('admin/Dashboard/Index');
+        // Mengambil data real untuk dashboard
+        $userCount = User::count();
+        $roleCount = Role::count();
+        $permissionCount = Permission::count();
+        $recentUsers = User::latest()->take(5)->get();
+        
+        // Data aktivitas (dalam contoh ini masih dummy, 
+        // bisa diganti dengan model Activity jika ada)
+        $activities = [
+            [
+                'user' => 'Admin',
+                'action' => 'menyetujui pendaftaran pengguna baru',
+                'time' => '5 menit yang lalu'
+            ],
+            [
+                'user' => 'Admin',
+                'action' => 'menambahkan izin baru',
+                'time' => '2 jam yang lalu'
+            ],
+            // Data aktivitas lainnya...
+        ];
+        
+        return inertia('admin/Dashboard/Index', [
+            'stats' => [
+                [
+                    'title' => 'Total Pengguna',
+                    'value' => $userCount,
+                    'icon' => 'Users',
+                    'change' => '+12%',
+                    'trend' => 'up',
+                ],
+                [
+                    'title' => 'Peran',
+                    'value' => $roleCount,
+                    'icon' => 'Shield',
+                    'change' => '0%',
+                    'trend' => 'neutral',
+                ],
+                [
+                    'title' => 'Izin',
+                    'value' => $permissionCount,
+                    'icon' => 'Key',
+                    'change' => '+5',
+                    'trend' => 'up',
+                ],
+                [
+                    'title' => 'Login Minggu Ini',
+                    'value' => '38',
+                    'icon' => 'BarChart3',
+                    'change' => '+24%',
+                    'trend' => 'up',
+                ]
+            ],
+            'activities' => $activities,
+            'title' => 'Dashboard Admin'
+        ]);
     })->name('dashboard');
 
     // Manajemen User

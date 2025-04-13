@@ -2,9 +2,9 @@
   <Head title="Admin Dashboard" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="flex h-full flex-1 flex-col gap-4 p-4 md:p-6">
+    <div class="flex flex-col gap-4 p-4 md:p-6 pb-12">
       <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold">Dashboard Admin</h1>
+        <h1 class="text-2xl font-bold">{{ title }}</h1>
       </div>
 
       <!-- Statistik -->
@@ -12,7 +12,7 @@
         <Card v-for="(stat, i) in stats" :key="i" class="border border-sidebar-border/70 dark:border-sidebar-border">
           <CardHeader class="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle class="text-sm font-medium">{{ stat.title }}</CardTitle>
-            <component :is="stat.icon" class="h-4 w-4 text-muted-foreground" />
+            <component :is="iconMapping[stat.icon]" class="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div class="text-2xl font-bold">{{ stat.value }}</div>
@@ -59,9 +59,32 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
-import { ref } from 'vue';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { BarChart3, Users, Shield, Key, TrendingUp } from 'lucide-vue-next';
+
+// Definisikan tipe
+interface StatItem {
+  title: string;
+  value: string | number;
+  icon: string;
+  change: string;
+  trend: 'up' | 'down' | 'neutral';
+}
+
+interface ActivityItem {
+  user: string;
+  action: string;
+  time: string;
+}
+
+interface DashboardProps {
+  stats: StatItem[];
+  activities: ActivityItem[];
+  title: string;
+}
+
+// Definisikan props dengan tipe
+const props = defineProps<DashboardProps>();
 
 // Breadcrumbs untuk navigasi
 const breadcrumbs: BreadcrumbItem[] = [
@@ -71,64 +94,11 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-// Data statistik untuk dashboard
-const stats = ref([
-  {
-    title: 'Total Pengguna',
-    value: '24',
-    icon: Users,
-    change: '+12%',
-    trend: 'up',
-  },
-  {
-    title: 'Peran',
-    value: '3',
-    icon: Shield,
-    change: '0%',
-    trend: 'neutral',
-  },
-  {
-    title: 'Izin',
-    value: '17',
-    icon: Key,
-    change: '+5',
-    trend: 'up',
-  },
-  {
-    title: 'Login Minggu Ini',
-    value: '38',
-    icon: BarChart3,
-    change: '+24%',
-    trend: 'up',
-  }
-]);
-
-// Data aktivitas terbaru
-const activities = ref([
-  {
-    user: 'Admin',
-    action: 'menyetujui pendaftaran Budi Santoso',
-    time: '5 menit yang lalu'
-  },
-  {
-    user: 'Admin',
-    action: 'menambahkan izin baru',
-    time: '2 jam yang lalu'
-  },
-  {
-    user: 'Joko Widodo',
-    action: 'melakukan login',
-    time: '3 jam yang lalu'
-  },
-  {
-    user: 'Admin',
-    action: 'menambahkan izin: manage_content',
-    time: '1 hari yang lalu'
-  },
-  {
-    user: 'Ani Yudhoyono',
-    action: 'bergabung',
-    time: '2 hari yang lalu'
-  }
-]);
+// Mapping nama ikon ke komponen ikon 
+const iconMapping: Record<string, any> = {
+  Users,
+  Shield,
+  Key,
+  BarChart3
+};
 </script> 
