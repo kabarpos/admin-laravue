@@ -37,6 +37,11 @@ const adminNavItems: NavItem[] = [
         title: 'Pengaturan Email',
         href: route('admin.email.index'),
         icon: Mail,
+    },
+    {
+        title: 'Pengaturan Website',
+        href: route('admin.settings.index'),
+        icon: Settings,
     }
 ];
 
