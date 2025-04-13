@@ -21,10 +21,26 @@ declare module 'vite/client' {
     }
 }
 
+// Deklarasi typing untuk objek __page global yang disisipkan oleh Inertia
+declare global {
+    interface Window {
+        __page?: {
+            props?: {
+                websiteSettings?: {
+                    siteName?: string;
+                };
+                name?: string;
+                title?: string;
+            };
+        };
+    }
+}
+
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
+    // Menonaktifkan title handler Inertia agar title diatur oleh middleware
+    title: (title) => title, // Agar tidak mengubah title
     resolve: (name) => resolvePageComponent(`./pages/${name}.vue`, import.meta.glob<DefineComponent>('./pages/**/*.vue')),
     setup({ el, App, props, plugin }) {
         const app = createApp({ render: () => h(App, props) });

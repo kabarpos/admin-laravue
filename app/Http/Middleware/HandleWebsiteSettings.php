@@ -34,10 +34,104 @@ class HandleWebsiteSettings
             && str_contains($response->headers->get('Content-Type') ?? '', 'text/html')
         ) {
             $content = $response->getContent();
+            
+            // Ubah title dengan format: [title-halaman] - [title website]
+            if ($settings->site_name) {
+                // Tambahkan script untuk menangani title dengan akurat
+                $script = "<script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const DEBUG = true; // Set ke false untuk menonaktifkan debugging
+                        const siteName = '" . e($settings->site_name) . "';
+                        
+                        // Fungsi debug untuk konsistensi
+                        function log(...args) {
+                            if (DEBUG) console.log('[Title Debug]', ...args);
+                        }
+                        
+                        // Fungsi untuk memperbarui judul
+                        function updateTitle() {
+                            // Debug informasi yang tersedia
+                            log('Update title called');
+                            if (window.__page) {
+                                log('Page component:', window.__page.component);
+                                log('Page props:', window.__page.props);
+                            } else {
+                                log('No __page object available');
+                            }
+                            
+                            let pageTitle = '';
+                            
+                            // 1. Coba ambil dari properti title langsung
+                            if (window.__page?.props?.title) {
+                                pageTitle = window.__page.props.title;
+                                log('Title from props.title:', pageTitle);
+                            }
+                            
+                            // 2. Coba ambil dari component head props jika tersedia
+                            else if (window.__page?.component) {
+                                try {
+                                    const components = window.__page.component.split('::')[0].split('/');
+                                    log('Component parts:', components);
+                                    
+                                    const lastComponent = components[components.length - 1];
+                                    if (lastComponent && lastComponent !== 'Index') {
+                                        pageTitle = lastComponent;
+                                        log('Title from last component:', pageTitle);
+                                    } else if (components.length > 1) {
+                                        pageTitle = components[components.length - 2];
+                                        log('Title from parent component:', pageTitle);
+                                    }
+                                } catch (e) {
+                                    log('Error extracting component name:', e);
+                                }
+                            }
+                            
+                            // 3. Fallback ke metadatanya properti meta
+                            if (!pageTitle && window.__page?.props?.meta?.title) {
+                                pageTitle = window.__page.props.meta.title;
+                                log('Title from props.meta.title:', pageTitle);
+                            }
+                            
+                            // 4. Fallback ke properti view lalu head di component
+                            if (!pageTitle && window.__page?.props?.component?.view?.head?.title) {
+                                pageTitle = window.__page.props.component.view.head.title;
+                                log('Title from component view head:', pageTitle);
+                            }
+                            
+                            // Format judul akhir
+                            if (pageTitle) {
+                                document.title = pageTitle + ' - ' + siteName;
+                                log('Final title:', document.title);
+                            } else {
+                                document.title = siteName;
+                                log('Using only site name:', document.title);
+                            }
+                        }
+                        
+                        // Pertama dipanggil saat DOMContentLoaded
+                        log('Initial call on DOMContentLoaded');
+                        updateTitle();
+                        
+                        // Kemudian saat setiap navigasi Inertia
+                        document.addEventListener('inertia:start', function(event) {
+                            log('inertia:start event', event);
+                        });
+                        
+                        document.addEventListener('inertia:finish', function(event) {
+                            log('inertia:finish event', event);
+                            // Tunggu sebentar agar Inertia sempat memproses head
+                            setTimeout(updateTitle, 10);
+                        });
+                    });
+                </script>";
+                
+                $content = str_replace('</head>', $script . "\n</head>", $content);
+            }
 
             // Menambahkan favicon jika ada
             if ($settings->favicon_path) {
-                $favicon = '<link rel="icon" href="' . $settings->getFaviconUrl() . '">';
+                $faviconUrl = $settings->getFaviconUrl();
+                $favicon = "<link rel=\"icon\" href=\"{$faviconUrl}\" />";
                 $content = str_replace('</head>', $favicon . "\n</head>", $content);
             }
             

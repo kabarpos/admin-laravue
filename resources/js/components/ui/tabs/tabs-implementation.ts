@@ -1,7 +1,7 @@
-<script lang="ts">
 import { cn } from "@/lib/utils"
 import { computed, defineComponent, h, inject, provide, ref, type InjectionKey, type Ref } from "vue"
 
+// Interface untuk context tabs
 interface TabsContextValue {
   value: Ref<string | undefined>
   setValue: (value: string) => void
@@ -9,9 +9,11 @@ interface TabsContextValue {
   activationMode: Ref<string>
 }
 
+// Symbol untuk context tabs
 const TabsContext = Symbol("TabsContext") as InjectionKey<TabsContextValue>
 
-export const Tabs = defineComponent({
+// Komponen Tabs
+const Tabs = defineComponent({
   name: "Tabs",
   props: {
     defaultValue: {
@@ -55,7 +57,8 @@ export const Tabs = defineComponent({
   },
 })
 
-export const TabsList = defineComponent({
+// Komponen TabsList
+const TabsList = defineComponent({
   name: "TabsList",
   setup(_, { slots }) {
     const context = inject(TabsContext)
@@ -77,7 +80,8 @@ export const TabsList = defineComponent({
   },
 })
 
-export const TabsTrigger = defineComponent({
+// Komponen TabsTrigger
+const TabsTrigger = defineComponent({
   name: "TabsTrigger",
   props: {
     value: {
@@ -129,7 +133,8 @@ export const TabsTrigger = defineComponent({
   },
 })
 
-export const TabsContent = defineComponent({
+// Komponen TabsContent
+const TabsContent = defineComponent({
   name: "TabsContent",
   props: {
     value: {
@@ -172,8 +177,12 @@ export const TabsContent = defineComponent({
     }
   },
 })
-</script>
 
-<template>
-  <slot />
-</template> 
+// Ekspor semua komponen
+export default {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  TabsContext
+} 
