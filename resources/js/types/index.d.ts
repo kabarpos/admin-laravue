@@ -16,6 +16,8 @@ export interface NavItem {
     href: string;
     icon?: LucideIcon;
     isActive?: boolean;
+    requiresRole?: string;
+    requiresPermission?: string;
 }
 
 export interface WebsiteSettings {
@@ -44,8 +46,10 @@ export interface User {
     email: string;
     avatar?: string;
     email_verified_at: string | null;
-    created_at: string;
-    updated_at: string;
+    created_at?: string;
+    updated_at?: string;
+    roles?: { id: number; name: string }[];
+    permissions?: string[];
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;

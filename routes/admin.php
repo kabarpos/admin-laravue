@@ -70,37 +70,46 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
             'activities' => $activities,
             'title' => 'Dashboard Admin'
         ]);
-    })->name('dashboard');
+    })->name('dashboard')->middleware('permission:access_admin_dashboard');
 
     // Manajemen User
-    Route::resource('users', UserController::class);
-    Route::patch('users/{user}/status', [UserController::class, 'updateStatus'])->name('users.update-status');
-    Route::post('users/{user}/resend-verification', [UserController::class, 'resendVerification'])->name('users.resend-verification');
-    Route::post('users/{user}/mark-verified', [UserController::class, 'markVerified'])->name('users.mark-verified');
+    Route::middleware('permission:manage_users')->group(function () {
+        Route::resource('users', UserController::class);
+        Route::patch('users/{user}/status', [UserController::class, 'updateStatus'])->name('users.update-status');
+        Route::post('users/{user}/resend-verification', [UserController::class, 'resendVerification'])->name('users.resend-verification');
+        Route::post('users/{user}/mark-verified', [UserController::class, 'markVerified'])->name('users.mark-verified');
+    });
     
     // Manajemen Role
-    Route::resource('roles', RoleController::class);
-    Route::post('roles/{role}/permissions', [RoleController::class, 'syncPermissions'])->name('roles.permissions.sync');
+    Route::middleware('permission:manage_roles')->group(function () {
+        Route::resource('roles', RoleController::class);
+        Route::post('roles/{role}/permissions', [RoleController::class, 'syncPermissions'])->name('roles.permissions.sync');
+    });
     
     // Manajemen Permission
-    Route::resource('permissions', PermissionController::class);
+    Route::middleware('permission:manage_permissions')->group(function () {
+        Route::resource('permissions', PermissionController::class);
+    });
     
-    // Pengaturan Email (Format Baru)
-    Route::get('email', [EmailController::class, 'index'])->name('email.index');
-    Route::put('email', [EmailController::class, 'update'])->name('email.update');
-    Route::post('email/test', [EmailController::class, 'test'])->name('email.test');
-    
-    // Pengaturan Website
-    Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
-    Route::put('settings/general', [SettingController::class, 'updateGeneral'])->name('settings.update-general');
-    Route::put('settings/footer', [SettingController::class, 'updateFooter'])->name('settings.update-footer');
-    Route::put('settings/scripts', [SettingController::class, 'updateScripts'])->name('settings.update-scripts');
-    Route::post('settings/logo', [SettingController::class, 'uploadLogo'])->name('settings.upload-logo');
-    Route::post('settings/favicon', [SettingController::class, 'uploadFavicon'])->name('settings.upload-favicon');
-    Route::post('settings/og-image', [SettingController::class, 'uploadOgImage'])->name('settings.upload-og-image');
-    
-    // Deprecated - akan dihapus setelah migrasi selesai
-    Route::get('email-settings', [EmailSettingController::class, 'edit'])->name('email-settings.edit');
-    Route::put('email-settings', [EmailSettingController::class, 'update'])->name('email-settings.update');
-    Route::post('email-settings/test', [EmailSettingController::class, 'sendTestEmail'])->name('email-settings.test');
+    // Pengaturan Email dan Website (gabungan)
+    Route::middleware('permission:manage_settings')->group(function () {
+        // Pengaturan Email
+        Route::get('email', [EmailController::class, 'index'])->name('email.index');
+        Route::put('email', [EmailController::class, 'update'])->name('email.update');
+        Route::post('email/test', [EmailController::class, 'test'])->name('email.test');
+        
+        // Pengaturan Website
+        Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
+        Route::put('settings/general', [SettingController::class, 'updateGeneral'])->name('settings.update-general');
+        Route::put('settings/footer', [SettingController::class, 'updateFooter'])->name('settings.update-footer');
+        Route::put('settings/scripts', [SettingController::class, 'updateScripts'])->name('settings.update-scripts');
+        Route::post('settings/logo', [SettingController::class, 'uploadLogo'])->name('settings.upload-logo');
+        Route::post('settings/favicon', [SettingController::class, 'uploadFavicon'])->name('settings.upload-favicon');
+        Route::post('settings/og-image', [SettingController::class, 'uploadOgImage'])->name('settings.upload-og-image');
+        
+        // Deprecated - akan dihapus setelah migrasi selesai
+        Route::get('email-settings', [EmailSettingController::class, 'edit'])->name('email-settings.edit');
+        Route::put('email-settings', [EmailSettingController::class, 'update'])->name('email-settings.update');
+        Route::post('email-settings/test', [EmailSettingController::class, 'sendTestEmail'])->name('email-settings.test');
+    });
 });

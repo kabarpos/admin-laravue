@@ -106,8 +106,20 @@ class HandleInertiaRequests extends Middleware
             ],
             'auth' => [
                 'user' => fn () => $request->user()
-                    ? $request->user()->only(
-                        'id', 'name', 'email', 'email_verified_at', 'profile_photo_path', 'is_active'
+                    ? array_merge(
+                        $request->user()->only(
+                            'id', 'name', 'email', 'email_verified_at', 'profile_photo_path', 'is_active'
+                        ),
+                        [
+                            // Tambahkan roles dan permissions
+                            'roles' => $request->user()->roles->map(function ($role) {
+                                return [
+                                    'id' => $role->id,
+                                    'name' => $role->name
+                                ];
+                            }),
+                            'permissions' => $request->user()->getPermissionsViaRoles()->pluck('name')->toArray()
+                        ]
                     )
                     : null,
             ],

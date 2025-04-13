@@ -24,5 +24,9 @@ class DatabaseSeeder extends Seeder
         
         // Seed pengaturan email
         $this->call(EmailSettingsSeeder::class);
+
+        $this->call([
+            PermissionRoleSeeder::class,
+        ]);
     }
 }
