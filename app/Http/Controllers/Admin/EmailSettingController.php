@@ -21,6 +21,7 @@ class EmailSettingController extends Controller
         
         return Inertia::render('admin/Settings/EmailSettings', [
             'emailSettings' => $emailSettings,
+            'title' => 'Pengaturan Email',
         ]);
     }
 

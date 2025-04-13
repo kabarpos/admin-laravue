@@ -24,6 +24,7 @@ class SettingController extends Controller
                 'favicon' => $settings->getFaviconUrl(),
                 'og_image' => $settings->getOgImageUrl(),
             ],
+            'title' => 'Pengaturan Website',
         ]);
     }
 

@@ -18,6 +18,7 @@ class PermissionController extends Controller
         
         return Inertia::render('admin/Permissions/Index', [
             'permissions' => $permissions,
+            'title' => 'Manajemen Izin',
         ]);
     }
 
@@ -26,7 +27,9 @@ class PermissionController extends Controller
      */
     public function create()
     {
-        return Inertia::render('admin/Permissions/Create');
+        return Inertia::render('admin/Permissions/Create', [
+            'title' => 'Tambah Izin',
+        ]);
     }
 
     /**
@@ -54,6 +57,7 @@ class PermissionController extends Controller
     {
         return Inertia::render('admin/Permissions/Show', [
             'permission' => $permission,
+            'title' => 'Detail Izin',
         ]);
     }
 
@@ -64,6 +68,7 @@ class PermissionController extends Controller
     {
         return Inertia::render('admin/Permissions/Edit', [
             'permission' => $permission,
+            'title' => 'Edit Izin',
         ]);
     }
 

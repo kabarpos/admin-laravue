@@ -63,6 +63,7 @@ class UserController extends Controller
                 'status' => $request->input('status', ''),
                 'role' => $request->input('role', ''),
             ],
+            'title' => 'Manajemen Pengguna',
         ]);
     }
 
@@ -75,6 +76,7 @@ class UserController extends Controller
         
         return Inertia::render('admin/Users/Create', [
             'roles' => $roles,
+            'title' => 'Tambah Pengguna',
         ]);
     }
 
@@ -118,6 +120,7 @@ class UserController extends Controller
         
         return Inertia::render('admin/Users/Show', [
             'user' => $user,
+            'title' => 'Detail Pengguna',
         ]);
     }
 
@@ -133,6 +136,7 @@ class UserController extends Controller
             'user' => $user,
             'roles' => $roles,
             'userRoles' => $user->roles->pluck('id')->toArray(),
+            'title' => 'Edit Pengguna',
         ]);
     }
 

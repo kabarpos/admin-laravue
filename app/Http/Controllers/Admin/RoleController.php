@@ -23,6 +23,7 @@ class RoleController extends Controller
         
         return Inertia::render('admin/Roles/Index', [
             'roles' => $roles,
+            'title' => 'Manajemen Peran',
         ]);
     }
 
@@ -35,6 +36,7 @@ class RoleController extends Controller
         
         return Inertia::render('admin/Roles/Create', [
             'permissions' => $permissions,
+            'title' => 'Tambah Peran',
         ]);
     }
 
@@ -68,6 +70,7 @@ class RoleController extends Controller
         
         return Inertia::render('admin/Roles/Show', [
             'role' => $role,
+            'title' => 'Detail Peran',
         ]);
     }
 
@@ -82,6 +85,7 @@ class RoleController extends Controller
         return Inertia::render('admin/Roles/Edit', [
             'role' => $role,
             'permissions' => $permissions,
+            'title' => 'Edit Peran',
         ]);
     }
 
