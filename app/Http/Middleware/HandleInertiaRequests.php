@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\WebsiteSetting;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -38,10 +39,13 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
-
+        
+        // Ambil pengaturan website
+        $settings = WebsiteSetting::getSettings();
+        
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
+            'name' => $settings->site_name ?: config('app.name'),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user(),
@@ -51,6 +55,16 @@ class HandleInertiaRequests extends Middleware
                 'location' => $request->url(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'websiteSettings' => [
+                'siteName' => $settings->site_name,
+                'siteSubtitle' => $settings->site_subtitle,
+                'siteDescription' => $settings->site_description,
+                'contactEmail' => $settings->contact_email,
+                'copyright' => $settings->getFullCopyrightText(),
+                'logoUrl' => $settings->getLogoUrl(),
+                'faviconUrl' => $settings->getFaviconUrl(),
+                'ogImageUrl' => $settings->getOgImageUrl(),
+            ],
         ];
     }
 }

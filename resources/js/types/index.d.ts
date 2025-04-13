@@ -18,12 +18,24 @@ export interface NavItem {
     isActive?: boolean;
 }
 
+export interface WebsiteSettings {
+    siteName?: string;
+    siteSubtitle?: string;
+    siteDescription?: string;
+    contactEmail?: string;
+    copyright?: string;
+    logoUrl?: string | null;
+    faviconUrl?: string | null;
+    ogImageUrl?: string | null;
+}
+
 export interface SharedData extends PageProps {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
+    websiteSettings: WebsiteSettings;
 }
 
 export interface User {

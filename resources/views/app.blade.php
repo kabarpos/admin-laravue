@@ -30,6 +30,12 @@
             }
         </style>
 
+        {{-- Default OG tags yang akan di-override oleh middleware --}}
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="{{ url()->current() }}">
+        <meta property="og:title" content="{{ config('app.name', 'Laravel') }}">
+        <meta property="twitter:card" content="summary_large_image">
+        
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
         <link rel="preconnect" href="https://fonts.bunny.net">
