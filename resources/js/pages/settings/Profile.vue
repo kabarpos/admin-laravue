@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref, computed, onBeforeUnmount } from 'vue';
 
 import DeleteUser from '@/components/DeleteUser.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
@@ -14,7 +14,8 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { type BreadcrumbItem, type SharedData, type User } from '@/types';
 import { Upload, User as UserIcon, Trash2 } from 'lucide-vue-next';
-import { getInitials } from '@/composables/useInitials';
+import { useInitials } from '@/composables/useInitials';
+import { getAvatarUrl, validateAvatarFile, createAvatarPreview } from '@/utils/avatarUtils';
 
 interface Props {
     mustVerifyEmail: boolean;
@@ -32,20 +33,20 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const page = usePage<SharedData>();
 const user = page.props.auth.user as User;
+const { getInitials } = useInitials();
+const errorMessage = ref<string | null>(null);
 
-// Avatar preview URL
-const getAvatarUrl = (path: string | null): string | null => {
-    if (!path) return null;
-    
-    // Jika sudah berupa URL lengkap, gunakan langsung
-    if (path.startsWith('http')) return path;
-    
-    // Jika path relatif, tambahkan URL storage
-    return `/storage/${path}`;
-};
-
+// Avatar preview URL dan cleanup function
 const avatarPreview = ref<string | null>(getAvatarUrl(user.profile_photo_path || null));
 const avatarFile = ref<File | null>(null);
+const revokePreviewFn = ref<(() => void) | null>(null);
+
+// Cleanup function untuk URL objek saat komponen unmounted
+onBeforeUnmount(() => {
+    if (revokePreviewFn.value) {
+        revokePreviewFn.value();
+    }
+});
 
 // Get initials for avatar fallback
 const userInitials = computed(() => getInitials(user.name));
@@ -64,13 +65,40 @@ const handleAvatarChange = (e: Event) => {
     if (!target.files?.length) return;
     
     const file = target.files[0];
+    
+    // Reset error message
+    errorMessage.value = null;
+    
+    // Validasi file
+    const validation = validateAvatarFile(file);
+    if (!validation.valid) {
+        errorMessage.value = validation.message || 'File tidak valid';
+        target.value = ''; // Reset input file
+        return;
+    }
+    
+    // Cleanup preview URL sebelumnya
+    if (revokePreviewFn.value) {
+        revokePreviewFn.value();
+    }
+    
+    // Buat preview baru
+    const { previewUrl, revokePreview } = createAvatarPreview(file);
+    avatarPreview.value = previewUrl;
+    revokePreviewFn.value = revokePreview;
+    
     avatarFile.value = file;
     form.avatar = file;
-    avatarPreview.value = URL.createObjectURL(file);
 };
 
 // Fungsi untuk menghapus avatar
 const removeAvatar = () => {
+    // Cleanup preview URL
+    if (revokePreviewFn.value) {
+        revokePreviewFn.value();
+        revokePreviewFn.value = null;
+    }
+    
     avatarPreview.value = null;
     avatarFile.value = null;
     form.avatar = null;
@@ -124,8 +152,9 @@ const submit = () => {
                                         @change="handleAvatarChange" 
                                         :error="!!form.errors.avatar"
                                     />
-                                    <p class="text-xs text-muted-foreground mt-1">Format: JPG, PNG. Ukuran maksimal: 2MB.</p>
+                                    <p class="text-xs text-muted-foreground mt-1">Format: JPG, PNG, GIF, WEBP. Ukuran maksimal: 2MB.</p>
                                     <InputError class="mt-1" :message="form.errors.avatar" />
+                                    <p v-if="errorMessage" class="mt-1 text-sm text-red-600">{{ errorMessage }}</p>
                                 </div>
                                 
                                 <div class="flex gap-2">
