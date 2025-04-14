@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Carbon;
 
 class AdminUserSeeder extends Seeder
 {
@@ -20,6 +21,7 @@ class AdminUserSeeder extends Seeder
             'email' => 'admin@admin.com',
             'password' => Hash::make('password'),
             'status' => 'active',
+            'email_verified_at' => Carbon::now(), // Set email terverifikasi
         ]);
 
         // Berikan role admin
