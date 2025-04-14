@@ -12,6 +12,20 @@ use Tighten\Ziggy\Ziggy;
 class HandleInertiaRequests extends Middleware
 {
     /**
+     * Konstanta untuk pengaturan default
+     */
+    const DEFAULT_SETTINGS = [
+        'site_name' => null, // Akan menggunakan config('app.name')
+        'site_subtitle' => '',
+        'site_description' => '',
+        'contact_email' => null, // Akan menggunakan config('mail.from.address')
+        'copyright' => null, // Akan menggunakan date('Y') + app.name
+        'logo_url' => null,
+        'favicon_url' => null,
+        'og_image_url' => null,
+    ];
+
+    /**
      * The root template that's loaded on the first page visit.
      *
      * @see https://inertiajs.com/server-side-setup#root-template
@@ -39,6 +53,16 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        // Regenerate CSRF token jika melakukan perubahan state (POST, PUT, DELETE)
+        $isStateChangingRequest = in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE']);
+        $csrfToken = $request->session()->token();
+        
+        if ($isStateChangingRequest && !$request->isXmlHttpRequest() && !$request->ajax()) {
+            // Regenerate CSRF token untuk permintaan yang mengubah state tetapi bukan AJAX/XHR
+            $request->session()->regenerateToken();
+            $csrfToken = $request->session()->token();
+        }
+        
         // Ambil pengaturan website - pastikan error handling memadai
         $websiteSettings = null;
         try {
@@ -75,22 +99,22 @@ class HandleInertiaRequests extends Middleware
             // Fallback jika terjadi error
             $websiteSettings = [
                 'site_name' => config('app.name'),
-                'site_subtitle' => '',
-                'site_description' => '',
+                'site_subtitle' => self::DEFAULT_SETTINGS['site_subtitle'],
+                'site_description' => self::DEFAULT_SETTINGS['site_description'],
                 'contact_email' => config('mail.from.address', ''),
                 'copyright' => date('Y') . ' © ' . config('app.name'),
-                'logo_url' => null,
-                'favicon_url' => null,
-                'og_image_url' => null,
+                'logo_url' => self::DEFAULT_SETTINGS['logo_url'],
+                'favicon_url' => self::DEFAULT_SETTINGS['favicon_url'],
+                'og_image_url' => self::DEFAULT_SETTINGS['og_image_url'],
                 
                 // Format camelCase
                 'siteName' => config('app.name'),
-                'siteSubtitle' => '',
-                'siteDescription' => '',
+                'siteSubtitle' => self::DEFAULT_SETTINGS['site_subtitle'],
+                'siteDescription' => self::DEFAULT_SETTINGS['site_description'],
                 'contactEmail' => config('mail.from.address', ''),
-                'logoUrl' => null,
-                'faviconUrl' => null,
-                'ogImageUrl' => null,
+                'logoUrl' => self::DEFAULT_SETTINGS['logo_url'],
+                'faviconUrl' => self::DEFAULT_SETTINGS['favicon_url'],
+                'ogImageUrl' => self::DEFAULT_SETTINGS['og_image_url'],
             ];
         }
         
@@ -153,7 +177,7 @@ class HandleInertiaRequests extends Middleware
         }
         
         return array_merge(parent::share($request), [
-            'csrf_token' => csrf_token(),
+            'csrf_token' => $csrfToken,
             'name' => $websiteSettings['siteName'] ?? config('app.name'),  // Untuk compatibility
             'ziggy' => function () use ($request) {
                 return array_merge((new Ziggy)->toArray(), [

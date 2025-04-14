@@ -2,6 +2,8 @@
  * Utility functions untuk penanganan avatar user
  */
 
+import type { User } from '@/types';
+
 /**
  * Mengambil URL lengkap dari path foto profil
  * @param path Path foto profil (bisa relatif atau URL lengkap)
@@ -23,7 +25,7 @@ export const getAvatarUrl = (path: string | null | undefined): string | null => 
  * @param user Object user yang berisi profile_photo_path dan/atau avatar
  * @returns Path avatar yang valid atau null
  */
-export const getUserAvatarPath = (user: any): string | null => {
+export const getUserAvatarPath = (user: User): string | null => {
   if (user?.profile_photo_path) {
     return user.profile_photo_path;
   }
