@@ -36,7 +36,7 @@ class RoleController extends Controller
         
         return Inertia::render('admin/Roles/Create', [
             'permissions' => $permissions,
-            'title' => 'Tambah Peran',
+            'title' => 'Tambah Peran Baru',
         ]);
     }
 

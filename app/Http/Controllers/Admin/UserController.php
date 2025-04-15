@@ -63,6 +63,7 @@ class UserController extends Controller
                 'status' => $request->input('status', ''),
                 'role' => $request->input('role', ''),
             ],
+            'roles' => Role::all(),
             'title' => 'Manajemen Pengguna',
         ]);
     }
@@ -72,11 +73,13 @@ class UserController extends Controller
      */
     public function create()
     {
-        $roles = Role::all();
-        
         return Inertia::render('admin/Users/Create', [
-            'roles' => $roles,
-            'title' => 'Tambah Pengguna',
+            'roles' => Role::all(),
+            'genders' => [
+                ['id' => 'male', 'name' => 'Laki-laki'],
+                ['id' => 'female', 'name' => 'Perempuan'],
+            ],
+            'title' => 'Tambah Pengguna Baru',
         ]);
     }
 
@@ -130,12 +133,15 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $user->load('roles');
-        $roles = Role::all();
         
         return Inertia::render('admin/Users/Edit', [
             'user' => $user,
-            'roles' => $roles,
+            'roles' => Role::all(),
             'userRoles' => $user->roles->pluck('id')->toArray(),
+            'genders' => [
+                ['id' => 'male', 'name' => 'Laki-laki'],
+                ['id' => 'female', 'name' => 'Perempuan'],
+            ],
             'title' => 'Edit Pengguna',
         ]);
     }

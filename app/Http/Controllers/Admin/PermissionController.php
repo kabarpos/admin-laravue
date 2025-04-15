@@ -55,6 +55,8 @@ class PermissionController extends Controller
      */
     public function show(Permission $permission)
     {
+        $permission->load('roles');
+        
         return Inertia::render('admin/Permissions/Show', [
             'permission' => $permission,
             'title' => 'Detail Izin',
